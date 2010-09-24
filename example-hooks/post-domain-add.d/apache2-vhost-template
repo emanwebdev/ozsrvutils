@@ -10,7 +10,7 @@
 
 	## FastCGI + PHP-FPM
 	#Include php-fpm.conf
-	#FastCgiExternalServer /fcgi-extsrvs-phpfpm -socket /var/opt/php53/run/www.sock -user {USER} -group {USER}
+	#FastCgiExternalServer /fcgi-extsrvs-phpfpm -socket /var/opt/php53/run/{DOMAIN}.sock -user {USER} -group {USER}
 
 	<Directory /home/{USER}/domains/{DOMAIN}/public>
 		Options FollowSymLinks
