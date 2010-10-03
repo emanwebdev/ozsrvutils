@@ -169,7 +169,7 @@ actionAdd()
 
 		# Create the actual database and user
 		mysql -u $cfgMysqlUser -p$cfgMysqlPass -h $cfgMysqlHost \
-			  -e "CREATE DATABASE $dbName; GRANT ALL ON $dbName.* TO '$dbUser'@'$cfgMysqlGrantHost' IDENTIFIED BY '$dbPass'"
+			  -e "CREATE DATABASE $dbName; GRANT $cfgMysqlGrantPrivs ON $dbName.* TO '$dbUser'@'$cfgMysqlGrantHost' IDENTIFIED BY '$dbPass'"
 		if (( $? == 0 )); then
 			# Store details in a file so we can get them later
 			sudo -u $optUser touch $domainPath/.ozsrvutils-mysql
