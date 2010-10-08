@@ -138,7 +138,7 @@ actionAdd()
 		fi
 		optUser=$(echo $optUser | sed -e 's/-//g')
 		if [[ -z $optPass ]]; then
-			optPass=$(apg -d -n1 -m10 -x14 -M lcnS -E \/\'\\\")
+			optPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
 		fi
 		## Create the new user
 		adduser --disabled-password --gecos "Created by ozsrvutils" $optUser > /dev/null
@@ -158,7 +158,7 @@ actionAdd()
 	## Calculate the database credentials to use
 	if [[ $optCreateMysql = true ]]; then
 		sitename=$(echo $optDomain | cut -d. -f1 | sed -e 's/-//g')
-		dbPass=$(apg -d -n1 -m10 -x14 -M lcnS -E \/\'\\\")
+		dbPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
 		if [[ -z $optDbName ]]; then
 			dbName=${optUser:0:12}_${sitename:0:19}
 		else

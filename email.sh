@@ -119,7 +119,7 @@ actionAdd()
 	fi
 
 	## Add in the username/password entry
-	password=$(apg -d -n1 -m10 -x14 -M lcnS)
+	password=$(apg -d -n1 -m10 -x14 -M LCNS)
 	echo $optEmail:$(dovecotpw -s SSHA -p $password) >> /etc/dovecot/passwd
 
 	maildirmake.dovecot /var/mail/virtual/$partDomain/$partUser vmail
