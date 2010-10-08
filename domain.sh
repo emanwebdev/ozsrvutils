@@ -19,6 +19,9 @@ optCreateMysql=true
 optDbName=
 optDbUser=
 
+## arguments used for 'delete'
+optRemoveMysql=true
+
 case "$2" in
 	--add)
 		action=add
@@ -55,7 +58,11 @@ do
 			optDbUser="$OPTARG"
 			;;
 		n)
-			optCreateMysql=false
+			if [[ $action = add ]]; then
+				optCreateMysql=false
+			else
+				optRemoveMysql=false
+			fi
 			;;
 		m)
 			optDbName="$OPTARG"
@@ -80,10 +87,10 @@ do
 				echo -e "\t-u\tUsername this domain will belong to. If it does not exist it shall be\n" \
 						"\t\tcreated for you. This value is trimmed to have a max length of 12 chars."
 			elif [[ $action = delete ]]; then
-				echo -e "\t$scriptName domain --delete -d domain [-mh]\n"
+				echo -e "\t$scriptName domain --delete -d domain [-nh]\n"
 				echo "Options:"
 				echo -e "\t-d\tDomain name of the website to be deleted."
-				echo -e "\t-m\t(optional) Do *not* remove associated MySQL database (if available)."
+				echo -e "\t-n\t(optional) Do *not* remove associated MySQL database (if available)."
 			fi
 			echo -e "\t-h\tDisplays this help text.\n"
 			echo "Report bugs to <alex@openzula.org>"
