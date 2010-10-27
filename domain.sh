@@ -160,7 +160,7 @@ actionAdd()
 		sitename=$(echo $optDomain | cut -d. -f1 | sed -e 's/-//g')
 		dbPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
 		if [[ -z $optDbName ]]; then
-			dbName=${optUser:0:12}_${sitename:0:19}
+			dbName=${optUser}_${sitename:0:51}
 		else
 			dbName=$optDbName
 		fi
@@ -229,7 +229,7 @@ actionAdd()
 ##
 actionDelete() {
 	if [[ -z $optDomain ]]; then
-		echo "Invalid arguments, expects at least '-d'. See -'h' for help text." >&2
+		echo "Invalid arguments, expects at least '-d'. See '-h' for help text." >&2
 		exit 1
 	fi
 
