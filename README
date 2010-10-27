@@ -80,5 +80,14 @@ post-domain-delete:
 	OZ_DOMAIN_NAME		Domain name
 	OZ_DOMAIN_PATH		Path to the domain directory (not docroot)
 
+post-email-add:
+	OZ_EMAIL			Email address that was added
+
+post-email-delete:
+	OZ_EMAIL			Email address that was deleted
+
+post-email-chpasswd:
+	OZ_EMAIL			Email address the password was changed for
+
 
 END OF README

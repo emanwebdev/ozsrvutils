@@ -125,10 +125,18 @@ actionAdd()
 	maildirmake.dovecot /var/mail/virtual/$partDomain/$partUser vmail
 	chown -R vmail:vmail /var/mail/virtual/$partDomain
 
-	## All done!
 	postmap /etc/postfix/virtual/mb-maps
 	postfix reload 2> /dev/null
 
+	## Run any additional files needed
+	export OZ_EMAIL=$optEmail
+	for postFile in $configPath/post-email-add.d/*.sh; do
+		if [[ -x $postFile ]]; then
+			(cd $configPath/post-email-add.d && ./$(basename $postFile))
+		fi
+	done
+
+	## All done!
 	credentialsFile=$cfgVarStateDir/emails/$optEmail
 	touch $credentialsFile
 	chown root:adm $credentialsFile
@@ -167,6 +175,14 @@ actionDelete()
 		rm -rf /var/mail/virtual/$partDomain
 	fi
 
+	## Run any additional files needed
+	export OZ_EMAIL=$optEmail
+	for postFile in $configPath/post-email-delete.d/*.sh; do
+		if [[ -x $postFile ]]; then
+			(cd $configPath/post-email-delete.d && ./$(basename $postFile))
+		fi
+	done
+
 	unlink $cfgVarStateDir/emails/$optEmail 2> /dev/null
 	postmap /etc/postfix/virtual/mb-maps
 	postfix reload 2> /dev/null
@@ -195,6 +211,14 @@ actionChpasswd()
 	echo $optEmail:$(dovecotpw -s SSHA -p $optPwd) >> /etc/dovecot/passwd
 
 	sed -i "s/^password = .*/password = $optPwd/" $stateFilePath
+
+	## Run any additional files needed
+	export OZ_EMAIL=$optEmail
+	for postFile in $configPath/post-email-chpasswd.d/*.sh; do
+		if [[ -x $postFile ]]; then
+			(cd $configPath/post-email-chpasswd.d && ./$(basename $postFile))
+		fi
+	done
 
 	echo "Updated email password"
 }
