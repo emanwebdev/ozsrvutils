@@ -123,6 +123,7 @@ actionAdd()
 	echo $optEmail:$(dovecotpw -s SSHA -p $password) >> /etc/dovecot/passwd
 
 	maildirmake.dovecot /var/mail/virtual/$partDomain/$partUser vmail
+	chown -R vmail:vmail /var/mail/virtual/$partDomain
 
 	## All done!
 	postmap /etc/postfix/virtual/mb-maps
