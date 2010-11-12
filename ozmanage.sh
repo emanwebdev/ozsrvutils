@@ -16,7 +16,7 @@ configFile=$configPath/config.cfg
 showHelp()
 {
 	echo "OpenZula server utilities"
-	echo -e "Usage:\n\t$scriptName [backup|domain|email|list]\n"
+	echo -e "Usage:\n\t$scriptName [domain|email|list]\n"
 	echo "Options:"
 	echo -e "\t-v\tVersion information"
 	echo -e "\t-h\tDisplays this help text, or help for each action e.g. $scriptName domain -h\n"
@@ -45,9 +45,6 @@ if (( $# == 0 )); then
 fi
 
 case "$1" in
-	backup)
-		source $scriptDir/backup.sh
-		;;
 	domain)
 		source $scriptDir/domain.sh
 		;;

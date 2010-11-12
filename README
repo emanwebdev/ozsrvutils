@@ -6,7 +6,7 @@ Introduction
 ========================
 
 A collection of Bash scripts to control the management of clients
-domains, emails and backups on OpenZula servers.
+domains and emails on OpenZula servers.
 
 These scripts offer the ability to add, edit and delete their specified
 task and restart/reload any service/deamon required for the effects to
@@ -33,9 +33,8 @@ To view the help simply use the "-h" flag, i.e:
 	ozmanage.sh -h
 
 This will display all of the available "actions" that can be used
-("backup", "domain", "email" etc). These are designed to manage their
-specified task and most commands will provided the ability to add and
-delete.
+("domain", "email" etc). These are designed to manage their specified
+task and most commands will provided the ability to add and delete.
 
 Each action has its own help which again ca be viewed using the "-h"
 flag, e.g:
