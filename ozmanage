@@ -46,13 +46,13 @@ fi
 
 case "$1" in
 	domain)
-		source $scriptDir/domain.sh
+		source $scriptDir/domain
 		;;
 	email)
-		source $scriptDir/email.sh
+		source $scriptDir/email
 		;;
 	list)
-		source $scriptDir/list.sh
+		source $scriptDir/list
 		;;
 	-v)
 		echo "0.9.64"
