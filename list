@@ -11,10 +11,10 @@
 
 case "$2" in
 	--domains)
-		ls -1 $cfgVarStateDir/domains/ 2> /dev/null
+		ls -1 "$cfgVarStateDir/domains/" 2> /dev/null
 		;;
 	--emails)
-		ls -1 $cfgVarStateDir/emails/ 2> /dev/null
+		ls -1 "$cfgVarStateDir/emails/" 2> /dev/null
 		;;
 	-h)
 		echo "OpenZula server utilities"
