@@ -130,7 +130,7 @@ actionAdd()
 
 	## Run any additional files needed
 	export OZ_EMAIL=$optEmail
-	for postFile in "$configPath"/post-email-add.d/*.sh; do
+	for postFile in "$configPath"/post-email-add.d/*; do
 		if [[ -x $postFile ]]; then
 			(cd "$configPath/post-email-add.d" && ./$(basename "$postFile"))
 		fi
@@ -177,7 +177,7 @@ actionDelete()
 
 	## Run any additional files needed
 	export OZ_EMAIL=$optEmail
-	for postFile in "$configPath"/post-email-delete.d/*.sh; do
+	for postFile in "$configPath"/post-email-delete.d/*; do
 		if [[ -x $postFile ]]; then
 			(cd "$configPath/post-email-delete.d" && ./$(basename "$postFile"))
 		fi
@@ -214,7 +214,7 @@ actionChpasswd()
 
 	## Run any additional files needed
 	export OZ_EMAIL=$optEmail
-	for postFile in "$configPath"/post-email-chpasswd.d/*.sh; do
+	for postFile in "$configPath"/post-email-chpasswd.d/*; do
 		if [[ -x $postFile ]]; then
 			(cd "$configPath/post-email-chpasswd.d" && ./$(basename "$postFile"))
 		fi

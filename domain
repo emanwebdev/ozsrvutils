@@ -192,7 +192,7 @@ actionAdd()
 
 	## Run any additional files needed
 	export OZ_USER=$optUser OZ_DOMAIN_NAME=$optDomain OZ_DOMAIN_PATH=$domainPath
-	for postFile in "$configPath"/post-domain-add.d/*.sh; do
+	for postFile in "$configPath"/post-domain-add.d/*; do
 		if [[ -x $postFile ]]; then
 			(cd "$configPath/post-domain-add.d" && ./$(basename "$postFile"))
 		fi
@@ -263,7 +263,7 @@ actionDelete() {
 
 	## Run any additional files needed
 	export OZ_USER=$user OZ_DOMAIN_NAME=$optDomain OZ_DOMAIN_PATH=$domainPath
-	for postFile in "$configPath"/post-domain-delete.d/*.sh; do
+	for postFile in "$configPath"/post-domain-delete.d/*; do
 		if [[ -x $postFile ]]; then
 			(cd "$configPath/post-domain-delete.d" && ./$(basename "$postFile"))
 		fi

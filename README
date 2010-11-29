@@ -60,8 +60,7 @@ named "{post,pre}-{action}-{add,edit,...}.d", e.g:
 
 	"config/post-domain-add.d"
 
-In these directories, any file that ends in "" will be executed
-(therefor the file must be +x).
+In these directories, any file that is executable will be executed.
 
 
 Hook environment vars
