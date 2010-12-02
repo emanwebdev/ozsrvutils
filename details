@@ -1,0 +1,95 @@
+#!/bin/bash
+
+###
+# OpenZula server utilities
+# --- Gets credentials/details of domains and email addresses
+#
+# @author Alex Cartwright <alex@openzula.org>
+# @copyright Copyright (C) 2010 OpenZula
+# @license http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU/GPL 2
+###
+
+case $2 in
+	--domain)
+		action=domain
+		getoptsStr=":d:h"
+		;;
+	--email)
+		action=email
+		getoptsStr=":a:h"
+		;;
+	-h)
+		echo "OpenZula server utilities"
+		echo "Usage:"
+		echo -e "\t$scriptName details --domain -d domain"
+		echo -e "\t$scriptName deatils --email -a foo@example.com\n"
+		echo "Report bugs to <alex@openzula.org>"
+		exit 0
+		;;
+	*)
+		echo "Invalid action '$2'. Use '--domain' or '--email'" >&2
+		exit 1
+		;;
+esac
+
+shift 2
+while getopts $getoptsStr OPTION
+do
+	case $OPTION in
+		a)
+			optEmail=$OPTARG
+			;;
+		d)
+			if [[ $OPTARG =~ ^www\. ]]; then
+				optDomain=${OPTARG:4}
+			else
+				optDomain=$OPTARG
+			fi
+			;;
+		h)
+			echo "OpenZula server utilities"
+			echo "Usage:"
+			if [[ $action = domain ]]; then
+				echo -e "\t$scriptName details --domain -d domain\n"
+				echo "Options:"
+				echo -e "\t-d\tDomain name of the website to get details for."
+			elif [[ $action = email ]]; then
+				echo -e "\t$scriptName details --email -a foo@example.com\n"
+				echo "Options:"
+				echo -e "\t-a\tEmail address to get details for."
+			fi
+			echo -e "\t-h\tDisplays this help text.\n"
+			echo "Report bugs to <alex@openzula.org>"
+			exit 0
+			;;
+		*)
+			echo "Invalid argument (or value of) '-$OPTARG'. See '-h' for help text." >&2
+			exit 1
+			;;
+	esac
+done
+
+if [[ -z $optDomain && -z $optEmail ]]; then
+	if [[ $action = domain ]]; then
+		echo "Invalid arguments; expecting at least '-d'. See -'h' for help text." >&2
+	else
+		echo "Invalid arguments; expecting at least '-a'. See -'h' for help text." >&2
+	fi
+	exit 1
+fi
+
+## Output the correct credentials file if it exists
+if [[ $action = domain ]]; then
+	credentialsFile=$cfgVarStateDir/$action/$optDomain
+else
+	credentialsFile=$cfgVarStateDir/$action/$optEmail
+fi
+
+if [[ -f $credentialsFile ]]; then
+	cat "$credentialsFile"
+else
+	echo "Unable to find '$credentialsFile'" >&2
+	exit 2
+fi
+
+exit 0
