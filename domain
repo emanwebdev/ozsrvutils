@@ -233,13 +233,13 @@ actionDelete() {
 		exit 1
 	fi
 
-	stateFilePath=$cfgVarStateDir/domains/$optDomain
-	if [[ ! -f $stateFilePath ]]; then
-		echo "Unable to find '$stateFilePath'" >&2
+	credentialsFile=$cfgVarStateDir/domains/$optDomain
+	if [[ ! -f $credentialsFile ]]; then
+		echo "Unable to find '$credentialsFile'" >&2
 		exit 2
 	fi
-	domainPath=$(grep "^path =" "$stateFilePath" | cut -d" " -f3)
-	user=$(grep "^user =" "$stateFilePath" | cut -d" " -f3)
+	domainPath=$(grep "^path =" "$credentialsFile" | cut -d" " -f3)
+	user=$(grep "^user =" "$credentialsFile" | cut -d" " -f3)
 
 	## Remove MySQL Database if needed (and the user)
 	if [[ $optRemoveMysql = true && -f $domainPath/.ozsrvutils-mysql ]]; then
@@ -259,7 +259,7 @@ actionDelete() {
 
 	## Remove physical files
 	rm -rf "$domainPath"
-	unlink "$cfgVarStateDir/domains/$optDomain"
+	unlink "$credentialsFile"
 
 	## Run any additional files needed
 	export OZ_USER=$user OZ_DOMAIN_NAME=$optDomain OZ_DOMAIN_PATH=$domainPath

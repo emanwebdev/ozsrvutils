@@ -195,9 +195,9 @@ actionDelete()
 ##
 actionChpasswd()
 {
-	stateFilePath=$cfgVarStateDir/emails/$optEmail
-	if [[ ! -f $stateFilePath ]]; then
-		echo "Unable to find '$stateFilePath'" >&2
+	credentialsFile=$cfgVarStateDir/emails/$optEmail
+	if [[ ! -f $credentialsFile ]]; then
+		echo "Unable to find '$credentialsFile'" >&2
 		exit 2
 	elif (( $(grep "^$optEmail:" /etc/dovecot/passwd > /dev/null; echo $?) == 1 )); then
 		echo "No login exists for this email address" >&2
@@ -210,7 +210,7 @@ actionChpasswd()
 	sed -i "/^$optEmail:/d" /etc/dovecot/passwd
 	echo "$optEmail":"$(dovecotpw -s SSHA -p $optPwd)" >> /etc/dovecot/passwd
 
-	sed -i "s/^password = .*/password = $optPwd/" "$stateFilePath"
+	sed -i "s/^password = .*/password = $optPwd/" "$credentialsFile"
 
 	## Run any additional files needed
 	export OZ_EMAIL=$optEmail
