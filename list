@@ -13,15 +13,10 @@ shopt -s extglob
 
 case $2 in
 	--domains)
-		if [[ -d $cfgVarStateDir/domains ]]; then
-			for path in $(printf '%s\n' "$cfgVarStateDir"/domains/*); do
-				basename "$path"
-			done
-		fi
-		;;
 	--emails)
-		if [[ -d $cfgVarStateDir/emails ]]; then
-			for path in $(printf '%s\n' "$cfgVarStateDir"/emails/*); do
+		action=${2:2}
+		if [[ -d $cfgVarStateDir/$action ]]; then
+			for path in $(printf '%s\n' "$cfgVarStateDir"/$action/*); do
 				basename "$path"
 			done
 		fi
