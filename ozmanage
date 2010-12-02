@@ -11,7 +11,7 @@
 scriptName=$(basename $0)
 scriptDir=$(dirname $0)
 configPath=./config
-configFile="$configPath/config.cfg"
+configFile=$configPath/config.cfg
 
 showHelp()
 {
@@ -44,7 +44,7 @@ if (( $# == 0 )); then
 	exit 0
 fi
 
-case "$1" in
+case $1 in
 	domain)
 		source "$scriptDir/domain"
 		;;

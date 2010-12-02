@@ -151,7 +151,7 @@ actionAdd()
 	fi
 
 	## Setup the document root
-	domainPath="/home/$optUser/domains/$optDomain"
+	domainPath=/home/$optUser/domains/$optDomain
 	sudo -u "$optUser" mkdir -p "$domainPath/public"
 	chown :www-data "/home/$optUser"
 
@@ -200,7 +200,7 @@ actionAdd()
 
 	## All done!
 	sudo -u "$optUser" touch "$domainPath/.ozsrvutils"
-	credentialsFile="$cfgVarStateDir/domains/$optDomain"
+	credentialsFile=$cfgVarStateDir/domains/$optDomain
 
 	touch "$credentialsFile"
 	chown root:adm "$credentialsFile"
@@ -233,7 +233,7 @@ actionDelete() {
 		exit 1
 	fi
 
-	stateFilePath="$cfgVarStateDir/domains/$optDomain"
+	stateFilePath=$cfgVarStateDir/domains/$optDomain
 	if [[ ! -f $stateFilePath ]]; then
 		echo "Unable to find '$stateFilePath'" >&2
 		exit 2

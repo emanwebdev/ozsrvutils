@@ -137,7 +137,7 @@ actionAdd()
 	done
 
 	## All done!
-	credentialsFile="$cfgVarStateDir/emails/$optEmail"
+	credentialsFile=$cfgVarStateDir/emails/$optEmail
 	touch "$credentialsFile"
 	chown root:adm "$credentialsFile"
 	chmod 0640 "$credentialsFile"
@@ -195,7 +195,7 @@ actionDelete()
 ##
 actionChpasswd()
 {
-	stateFilePath="$cfgVarStateDir/emails/$optEmail"
+	stateFilePath=$cfgVarStateDir/emails/$optEmail
 	if [[ ! -f $stateFilePath ]]; then
 		echo "Unable to find '$stateFilePath'" >&2
 		exit 2
