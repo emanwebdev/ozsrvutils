@@ -9,12 +9,22 @@
 # @license http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU/GPL 2
 ###
 
+shopt -s extglob
+
 case $2 in
 	--domains)
-		ls -1 "$cfgVarStateDir/domains/" 2> /dev/null
+		if [[ -d $cfgVarStateDir/domains ]]; then
+			for path in $(printf '%s\n' "$cfgVarStateDir"/domains/*); do
+				basename "$path"
+			done
+		fi
 		;;
 	--emails)
-		ls -1 "$cfgVarStateDir/emails/" 2> /dev/null
+		if [[ -d $cfgVarStateDir/emails ]]; then
+			for path in $(printf '%s\n' "$cfgVarStateDir"/emails/*); do
+				basename "$path"
+			done
+		fi
 		;;
 	-h)
 		echo "OpenZula server utilities"
