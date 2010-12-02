@@ -55,7 +55,7 @@ case "$1" in
 		source "$scriptDir/list"
 		;;
 	-v)
-		echo "0.9.64"
+		echo "0.9.70"
 		;;
 	-h)
 		showHelp
