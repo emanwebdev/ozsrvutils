@@ -14,7 +14,7 @@ if (( $(which postfix postmap dovecotpw &> /dev/null; echo $?) > 0 )); then
 	exit 2
 fi
 
-case "$2" in
+case $2 in
 	--add)
 		action=add
 		;;
@@ -42,7 +42,7 @@ esac
 shift 2
 while getopts ":a:p:h" OPTION
 do
-	case "$OPTION" in
+	case $OPTION in
 		a)
 			optEmail=$OPTARG
 			;;

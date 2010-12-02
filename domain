@@ -22,7 +22,7 @@ optDbUser=
 ## arguments used for 'delete'
 optRemoveMysql=true
 
-case "$2" in
+case $2 in
 	--add)
 		action=add
 		;;
@@ -46,10 +46,10 @@ esac
 shift 2
 while getopts ":d:j:nm:p:u:h" OPTION
 do
-	case "$OPTION" in
+	case $OPTION in
 		d)
 			if [[ $OPTARG =~ ^www\. ]]; then
-				optDomain="${OPTARG:4}"
+				optDomain=${OPTARG:4}
 			else
 				optDomain=$OPTARG
 			fi
@@ -121,7 +121,7 @@ actionAdd()
 	fi
 
 	## Get the ID of the user, create it if needed
-	optUser="${optUser:0:12}"
+	optUser=${optUser:0:12}
 	userId=$(id -u "$optUser" 2> /dev/null)
 	if (( $? == 0 )); then
 		## Find another domain this user has and use the password from that
@@ -160,15 +160,15 @@ actionAdd()
 		sitename=$(echo "$optDomain" | cut -d. -f1 | sed -e 's/-//g')
 		dbPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
 		if [[ -z $optDbName ]]; then
-			dbName="${optUser}_${sitename:0:51}"
+			dbName=${optUser}_${sitename:0:51}
 		else
 			dbName=$optDbName
 		fi
 		if [[ -z $optDbUser ]]; then
 			## Work out the max length of the name part of the DB User. Use 8 chars max from the account username
-			tmpDbUser="${optUser:0:8}"
+			tmpDbUser=${optUser:0:8}
 			snMaxLength=$(( 16-(${#tmpDbUser}+1) ))
-			dbUser="${sitename: 0 : $snMaxLength}-$tmpDbUser"
+			dbUser=${sitename: 0 : $snMaxLength}-$tmpDbUser
 		else
 			dbUser=$optDbUser
 		fi
