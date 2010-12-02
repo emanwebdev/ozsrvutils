@@ -9,8 +9,6 @@
 # @license http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU/GPL 2
 ###
 
-shopt -s extglob
-
 case $2 in
 	--domains)
 	--emails)
