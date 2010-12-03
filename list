@@ -10,8 +10,7 @@
 ###
 
 case $2 in
-	--domains)
-	--emails)
+	--domains|--emails)
 		action=${2:2}
 		if [[ -d $cfgVarStateDir/$action ]]; then
 			for path in $(printf '%s\n' "$cfgVarStateDir"/$action/*); do
