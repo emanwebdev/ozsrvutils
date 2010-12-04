@@ -196,7 +196,7 @@ actionChpasswd()
 	elif (( $(grep "^$optEmail:" /etc/dovecot/passwd > /dev/null; echo $?) == 1 )); then
 		echo "No login exists for this email address" >&2
 		exit 2
-	elif [[ -z $optPwd || ${#optPwd} -lt 6 ]]; then
+	elif (( ${#optPwd} < 6 )); then
 		echo "Password must be >= 6 characters long" >&2
 		exit 2
 	fi
