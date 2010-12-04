@@ -23,11 +23,8 @@ optDbUser=
 optRemoveMysql=true
 
 case $2 in
-	--add)
-		action=add
-		;;
-	--delete)
-		action=delete
+	--add|--delete)
+		action=${2:2}
 		;;
 	-h)
 		echo "OpenZula server utilities"

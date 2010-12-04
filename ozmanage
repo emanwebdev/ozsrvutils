@@ -45,17 +45,8 @@ if (( $# == 0 )); then
 fi
 
 case $1 in
-	details)
-		source "$scriptDir/details"
-		;;
-	domain)
-		source "$scriptDir/domain"
-		;;
-	email)
-		source "$scriptDir/email"
-		;;
-	list)
-		source "$scriptDir/list"
+	details|domain|email|list)
+		source "$scriptDir/$1"
 		;;
 	-v)
 		echo "0.9.71"
