@@ -1,0 +1,113 @@
+#!/bin/bash
+
+###
+# OpenZula server utilities
+# --- Backups domains, emails and some system files using "duplicity"
+#
+# @author Alex Cartwright <alex@openzula.org>
+# @copyright Copyright (C) 2010 OpenZula
+# @license http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU/GPL 2
+###
+
+if (( $(which duplicity &> /dev/null; echo $?) > 0 )); then
+	echo "One or more of the following commands can not be found: duplicity" >&2
+	exit 2
+fi
+
+case $2 in
+	--cron|--domains|--emails)
+		action=${2:2}
+		;;
+	-h)
+		echo "OpenZula server utilities"
+		echo "Usage:"
+		echo -e "\t$scriptName backup --cron"
+		echo -e "\t$scriptName backup --domains"
+		echo -e "\t$scriptName backup --emails\n"
+		echo "Report bugs to <alex@openzula.org>"
+		exit 0
+		;;
+	*)
+		echo "Invalid action '$2'. Use '--cron', '--domains' or '--emails'" >&2
+		exit 1
+		;;
+esac
+
+if [[ -z $cfgBackupDest ]]; then
+	echo "No backup destination 'cfgBackupDest' has been set" >&2
+	exit 2
+fi
+
+##
+## Set various environmental variables & duplicity arguments
+##
+export PASSPHRASE=$cfgBackupPassphrase
+
+# GPG encryption & signing (advised)
+if [[ -n $cfgBackupGpgKey ]]; then
+	duplicityArgs=(--encrypt-key="$cfgBackupGpgKey" --sign-key="$cfgBackupGpgKey")
+else
+	duplicityArgs=(--no-encryption)
+fi
+
+# Amazon S3 specific configuration
+if [[ -n $cfgBackupS3SecretKey ]]; then
+	export AWS_ACCESS_KEY_ID=$cfgBackupS3Key AWS_SECRET_ACCESS_KEY=$cfgBackupS3SecretKey
+	if [[ $cfgBackupS3European = true ]]; then
+		duplicityArgs+=(--s3-use-new-style --s3-european-buckets)
+	elif [[ $cfgBackupS3NewStyle = true ]]; then
+		duplicityArgs+=(--s3-use-new-style)
+	fi
+fi
+
+duplicityArgs+=("${cfgBackupDuplicityArgs[@]}")
+
+##
+## Backup all of the required paths
+##
+duplicityBackupPath()
+{
+	duplicity \
+		--verbosity warning \
+		--no-print-statistics \
+		--full-if-older-than 1M \
+		"${duplicityArgs[@]}" \
+		"$1" "$cfgBackupDest/$2/$1"
+	if (( $? > 0 )); then
+		echo "Failed to backup '$1'" >&2
+	else
+		echo "Successfully backed up '$1'"
+		duplicity \
+			remove-older-than "${cfgBackupTtl:-6M}" \
+			--verbosity warning \
+			--force \
+			"${duplicityArgs[@]}" \
+			"$cfgBackupDest/$2/$1"
+		if (( $? > 0 )); then
+			echo "Failed to remove older files in '$2/$1'" >&2
+		fi
+	fi
+}
+
+if [[ $action = domains ]]; then
+	for credentialsFile in "$cfgVarStateDir"/domains/*; do
+		# Get the document root of the domain name
+		documentRoot=$(awk '/^path =/{print $3}' "$credentialsFile")
+		if (( $(duplicityBackupPath "$documentRoot" domains | grep -c Failed) > 0 )); then
+			exitCode=3
+		fi
+	done
+else
+	if [[ $action = cron ]]; then
+		backupSourcePath=/var/spool/cron
+	elif [[ $action = emails ]]; then
+		backupSourcePath=/var/mail/virtual
+	fi
+	if (( $(duplicityBackupPath $backupSourcePath $action | grep -c Failed) > 0 )); then
+		exitCode=3
+	fi
+fi
+
+unset PASSPHRASE AWS_ACCESS_KEY AWS_SECRET_ACCESS_KEY
+
+exit ${exitCode:-0}
