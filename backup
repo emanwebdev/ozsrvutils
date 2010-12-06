@@ -71,6 +71,7 @@ duplicityBackupPath()
 		--verbosity warning \
 		--no-print-statistics \
 		--full-if-older-than 1M \
+		--volsize 100 \
 		"${duplicityArgs[@]}" \
 		"$1" "$cfgBackupDest/$2/$1"
 	if (( $? > 0 )); then
