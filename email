@@ -105,7 +105,6 @@ actionAdd()
 	fi
 
 	## Add the map in for this email address, grouping all emails together
-	domainPath=$(awk '/^path =/{print $3}' "$credentialsFile")
 	lastEntryLn=$(grep -n -m1 "@$partDomain" /etc/postfix/virtual/mb-maps | cut -d: -f1)
 	if [[ -z $lastEntryLn ]]; then
 		echo -e "\n## $partDomain\n$optEmail\t\t\t$partDomain/$partUser/" >> /etc/postfix/virtual/mb-maps
