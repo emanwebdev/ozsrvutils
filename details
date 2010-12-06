@@ -11,11 +11,11 @@
 
 case $2 in
 	--domain)
-		action=domain
+		action=domains
 		getoptsStr=":d:h"
 		;;
 	--email)
-		action=email
+		action=emails
 		getoptsStr=":a:h"
 		;;
 	-h)
@@ -49,11 +49,11 @@ do
 		h)
 			echo "OpenZula server utilities"
 			echo "Usage:"
-			if [[ $action = domain ]]; then
+			if [[ $action = domains ]]; then
 				echo -e "\t$scriptName details --domain -d domain\n"
 				echo "Options:"
 				echo -e "\t-d\tDomain name of the website to get details for."
-			elif [[ $action = email ]]; then
+			elif [[ $action = emails ]]; then
 				echo -e "\t$scriptName details --email -a foo@example.com\n"
 				echo "Options:"
 				echo -e "\t-a\tEmail address to get details for."
@@ -70,7 +70,7 @@ do
 done
 
 if [[ -z $optDomain && -z $optEmail ]]; then
-	if [[ $action = domain ]]; then
+	if [[ $action = domains ]]; then
 		echo "Invalid arguments; expecting at least '-d'. See -'h' for help text." >&2
 	else
 		echo "Invalid arguments; expecting at least '-a'. See -'h' for help text." >&2
@@ -79,7 +79,7 @@ if [[ -z $optDomain && -z $optEmail ]]; then
 fi
 
 ## Output the correct credentials file if it exists
-if [[ $action = domain ]]; then
+if [[ $action = domains ]]; then
 	credentialsFile=$cfgVarStateDir/$action/$optDomain
 else
 	credentialsFile=$cfgVarStateDir/$action/$optEmail
