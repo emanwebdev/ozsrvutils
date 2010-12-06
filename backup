@@ -76,6 +76,7 @@ duplicityBackupPath()
 		"$1" "$cfgBackupDest/$2/$1"
 	if (( $? > 0 )); then
 		echo "Failed to backup '$1'" >&2
+		return 2
 	else
 		echo "Successfully backed up '$1'"
 		duplicity \
@@ -86,26 +87,35 @@ duplicityBackupPath()
 			"$cfgBackupDest/$2/$1"
 		if (( $? > 0 )); then
 			echo "Failed to remove older files in '$2/$1'" >&2
+			return 2
+		else
+			return 0
 		fi
 	fi
 }
 
 if [[ $action = domains ]]; then
 	for credentialsFile in "$cfgVarStateDir"/domains/*; do
-		# Get the document root of the domain name
-		documentRoot=$(awk '/^path =/{print $3}' "$credentialsFile")
-		if (( $(duplicityBackupPath "$documentRoot" domains | grep -c Failed) > 0 )); then
-			exitCode=3
+		# Get the path of the domain name
+		domainPath=$(awk '/^path =/{print $3}' "$credentialsFile")
+		if [[ -z $domainPath || ! -d $domainPath ]]; then
+			echo "Malformed or nonexistent 'path' value in '$credentialsFile'" >&2
+			exitCode=2
+		else
+			duplicityBackupPath "$domainPath" domains
+			if (( $? > 0 )); then
+				exitCode=2
+			fi
 		fi
 	done
 else
 	if [[ $action = cron ]]; then
-		backupSourcePath=/var/spool/cron
+		duplicityBackupPath /var/spool/cron cron
 	elif [[ $action = emails ]]; then
-		backupSourcePath=/var/mail/virtual
+		duplicityBackupPath /var/mail/virtual emails
 	fi
-	if (( $(duplicityBackupPath $backupSourcePath $action | grep -c Failed) > 0 )); then
-		exitCode=3
+	if (( $? > 0 )); then
+		exitCode=2
 	fi
 fi
 
