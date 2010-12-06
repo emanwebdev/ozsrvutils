@@ -23,11 +23,8 @@ optDbUser=
 optRemoveMysql=true
 
 case $2 in
-	--add)
-		action=add
-		;;
-	--delete)
-		action=delete
+	--add|--delete)
+		action=${2:2}
 		;;
 	-h)
 		echo "OpenZula server utilities"
@@ -125,7 +122,7 @@ actionAdd()
 	userId=$(id -u "$optUser" 2> /dev/null)
 	if (( $? == 0 )); then
 		## Find another domain this user has and use the password from that
-		existingStateFile=$(grep -H -m 1 "^username = $optUser$" "$cfgVarStateDir"/domains/* 2> /dev/null | head -1 | cut -d: -f1)
+		read -r existingStateFile < <(grep -lFx "username = $optUser" "$cfgVarStateDir"/domains/* 2> /dev/null)
 		if [[ -n $existingStateFile ]]; then
 			optPass=$(awk '/^password =/{print $3}' "$existingStateFile")
 		else
@@ -238,8 +235,8 @@ actionDelete() {
 		echo "Unable to find '$credentialsFile'" >&2
 		exit 2
 	fi
-	domainPath=$(grep "^path =" "$credentialsFile" | cut -d" " -f3)
-	user=$(grep "^user =" "$credentialsFile" | cut -d" " -f3)
+	domainPath=$(awk '/^path =/{print $3}' "$credentialsFile")
+	user=$(awk '/^user =/{print $3}' "$credentialsFile")
 
 	## Remove MySQL Database if needed (and the user)
 	if [[ $optRemoveMysql = true && -f $domainPath/.ozsrvutils-mysql ]]; then
