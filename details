@@ -80,9 +80,9 @@ fi
 
 ## Output the correct credentials file if it exists
 if [[ $action = domain ]]; then
-	credentialsFile=$cfgVarStateDir/$action/$optDomain
+	credentialsFile=$cfgVarStateDir/domains/$optDomain
 else
-	credentialsFile=$cfgVarStateDir/$action/$optEmail
+	credentialsFile=$cfgVarStateDir/emails/$optEmail
 fi
 
 if [[ -f $credentialsFile ]]; then
