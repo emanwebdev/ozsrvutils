@@ -110,12 +110,18 @@ if [[ $action = domains ]]; then
 	done
 else
 	if [[ $action = cron ]]; then
-		duplicityBackupPath /var/spool/cron cron
+		sourcePath=/var/spool/cron
 	elif [[ $action = emails ]]; then
-		duplicityBackupPath /var/mail/virtual emails
+		sourcePath=/var/mail/virtual
 	fi
-	if (( $? > 0 )); then
+	if [[ ! -d $sourcePath ]]; then
+		echo "Unable to find '$sourcePath'" >&2
 		exitCode=2
+	else
+		duplicityBackupPath $sourcePath $action
+		if (( $? > 0 )); then
+			exitCode=2
+		fi
 	fi
 fi
 
