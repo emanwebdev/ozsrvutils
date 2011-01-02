@@ -66,6 +66,10 @@ duplicityArgs+=("${cfgBackupDuplicityArgs[@]}")
 ##
 ## Backup all of the required paths
 ##
+## @param string source ($1)
+## @param string realm ($2)
+## @param string destination ($3)	If empty the source will be used
+##
 duplicityBackupPath()
 {
 	duplicity \
@@ -74,7 +78,8 @@ duplicityBackupPath()
 		--full-if-older-than 1M \
 		--volsize 100 \
 		"${duplicityArgs[@]}" \
-		"$1" "$cfgBackupDest/$2/$1"
+		"$1" \
+		"$cfgBackupDest/$2/${3:-$1}"
 	if (( $? > 0 )); then
 		echo "Failed to backup '$1'" >&2
 		return 2
@@ -85,7 +90,7 @@ duplicityBackupPath()
 			--verbosity warning \
 			--force \
 			"${duplicityArgs[@]}" \
-			"$cfgBackupDest/$2/$1"
+			"$cfgBackupDest/$2/${3:-$1}"
 		if (( $? > 0 )); then
 			echo "Failed to remove older files in '$2/$1'" >&2
 			return 2
@@ -143,7 +148,7 @@ elif [[ $action = mysql ]]; then
 				--skip-extended-insert \
 				"$dbName" | gzip > "$tmpFile"
 			# Back up the tmp file
-			duplicityBackupPath "$tmpFile" mysql
+			duplicityBackupPath "$tmpFile" mysql "$dbName"
 			unlink "$tmpFile"
 		fi
 	done
