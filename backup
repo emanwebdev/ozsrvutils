@@ -15,7 +15,7 @@ if (( $(which duplicity &> /dev/null; echo $?) > 0 )); then
 fi
 
 case $2 in
-	--cron|--domains|--emails)
+	--cron|--domains|--emails|--mysql)
 		action=${2:2}
 		;;
 	-h)
@@ -23,12 +23,13 @@ case $2 in
 		echo "Usage:"
 		echo -e "\t$scriptName backup --cron"
 		echo -e "\t$scriptName backup --domains"
-		echo -e "\t$scriptName backup --emails\n"
+		echo -e "\t$scriptName backup --emails"
+		echo -e "\t$scriptName backup --mysql\n"
 		echo "Report bugs to <alex@openzula.org>"
 		exit 0
 		;;
 	*)
-		echo "Invalid action '$2'. Use '--cron', '--domains' or '--emails'" >&2
+		echo "Invalid action '$2'. Use '--cron', '--domains', '--emails' or '--mysql'" >&2
 		exit 1
 		;;
 esac
@@ -108,7 +109,7 @@ if [[ $action = domains ]]; then
 			fi
 		fi
 	done
-else
+elif [[ $action = cron || $action = emails ]]; then
 	if [[ $action = cron ]]; then
 		sourcePath=/var/spool/cron
 	elif [[ $action = emails ]]; then
@@ -123,6 +124,31 @@ else
 			exitCode=2
 		fi
 	fi
+elif [[ $action = mysql ]]; then
+	# Backup all the domain databases
+	tmpDir=$(mktemp -d --tmpdir ozsrvutils-mysql.XXX)
+	for credentialsFile in "$cfgVarStateDir"/domains/*; do
+		dbUser=$(awk '/^mysql_username =/{print $3}' "$credentialsFile")
+		dbPass=$(awk '/^mysql_password =/{print $3}' "$credentialsFile")
+		dbName=$(awk '/^mysql_database =/{print $3}' "$credentialsFile")
+		if [[ -n $dbUser && -n $dbPass && -n $dbName ]]; then
+			# Dump the MySQL database to a tmp file
+			tmpFile=$tmpDir/$dbName.sql.gz
+			(umask 177 && touch "$tmpFile")
+			mysqldump \
+				--host="$cfgMysqlHost" \
+				--user="$dbUser" \
+				--password="$dbPass" \
+				--lock-tables \
+				--skip-extended-insert \
+				"$dbName" | gzip > "$tmpFile"
+			if (( $? == 0 )); then
+				# Back up the tmp file
+				duplicityBackupPath "$tmpFile" mysql
+			fi
+			unlink "$tmpFile"
+		fi
+	done
 fi
 
 unset PASSPHRASE AWS_ACCESS_KEY AWS_SECRET_ACCESS_KEY
