@@ -15,16 +15,22 @@ if (( $(which duplicity &> /dev/null; echo $?) > 0 )); then
 fi
 
 case $2 in
-	--cron|--domains|--emails|--mysql)
-		action=${2:2}
+	--cron)
+		backupCron=true
+		;;
+	--domains)
+		backupDomains=true
+		;;
+	--emails)
+		backupEmails=true
+		;;
+	--mysql)
+		backupMysql=true
 		;;
 	-h)
 		echo "OpenZula server utilities"
 		echo "Usage:"
-		echo -e "\t$scriptName backup --cron"
-		echo -e "\t$scriptName backup --domains"
-		echo -e "\t$scriptName backup --emails"
-		echo -e "\t$scriptName backup --mysql\n"
+		echo -e "\t$scriptName backup [--cron --domains --emails --mysql]\n"
 		echo "Report bugs to <alex@openzula.org>"
 		exit 0
 		;;
@@ -111,9 +117,19 @@ duplicityBackupPath()
 }
 
 ##
-## Begin backup of the various things
+## Backup everything we've been told to do
 ##
-if [[ $action = domains ]]; then
+
+# cron
+if [[ $backupCron = true ]]; then
+	duplicityBackupPath /var/spool/cron cron
+	if (( $? > 0 )); then
+		exitCode=2
+	fi
+fi
+
+# Domain document roots
+if [[ $backupDomains = true ]]; then
 	for credentialsFile in "$cfgVarStateDir"/domains/*; do
 		domainPath=$(awk '/^path =/{print $3}' "$credentialsFile")
 		if [[ -z $domainPath || ! -d $domainPath ]]; then
@@ -126,25 +142,20 @@ if [[ $action = domains ]]; then
 			fi
 		fi
 	done
-elif [[ $action = cron || $action = emails ]]; then
-	if [[ $action = cron ]]; then
-		sourcePath=/var/spool/cron
-	elif [[ $action = emails ]]; then
-		sourcePath=/var/mail/virtual
-	fi
+fi
 
-	if [[ ! -d $sourcePath ]]; then
-		echo "Unable to find '$sourcePath'" >&2
+# Virtual email addresses
+if [[ $backupEmails = true ]]; then
+	duplicityBackupPath /var/mail/virtual emails
+	if (( $? > 0 )); then
 		exitCode=2
-	else
-		duplicityBackupPath $sourcePath $action
-		if (( $? > 0 )); then
-			exitCode=2
-		fi
 	fi
-elif [[ $action = mysql ]]; then
-	# Backup all the domain databases
+fi
+
+# Domain MySQL databases
+if [[ $backupMysql = true ]]; then
 	tmpDir=$(mktemp -d --tmpdir ozsrvutils-mysql.XXX)
+
 	for credentialsFile in "$cfgVarStateDir"/domains/*; do
 		dbUser=$(awk '/^mysql_username =/{print $3}' "$credentialsFile")
 		dbPass=$(awk '/^mysql_password =/{print $3}' "$credentialsFile")
@@ -167,7 +178,6 @@ elif [[ $action = mysql ]]; then
 		fi
 	done
 
-	# A little house keeping
 	rm -rf "$tmpDir"
 fi
 
