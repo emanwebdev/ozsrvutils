@@ -53,7 +53,9 @@ fi
 
 # Amazon S3 specific configuration
 if [[ -n $cfgBackupS3SecretKey ]]; then
-	export AWS_ACCESS_KEY_ID=$cfgBackupS3Key AWS_SECRET_ACCESS_KEY=$cfgBackupS3SecretKey
+	export AWS_ACCESS_KEY_ID=$cfgBackupS3Key \
+		   AWS_SECRET_ACCESS_KEY=$cfgBackupS3SecretKey
+
 	if [[ $cfgBackupS3European = true ]]; then
 		duplicityArgs+=(--s3-use-new-style --s3-european-buckets)
 	elif [[ $cfgBackupS3NewStyle = true ]]; then
@@ -63,13 +65,13 @@ fi
 
 duplicityArgs+=("${cfgBackupDuplicityArgs[@]}")
 
-##
-## Backup all of the required paths
-##
-## @param string source ($1)
-## @param string realm ($2)
-## @param string destination ($3)	If empty the source will be used
-##
+# Function to backup a source path ($1) using the provided realm ($2). Realms
+# help separate the different things that get backed up, such as domains,
+# emails etc which suffix the "cfgBackupDest" var, e.g. $cfgBackupDest/<realm>/
+#
+# An optional third argument can be passed which specifies the destination
+# subpath ($3), allowing you to organize the destination paths better. If empty
+# then the source path ($1) will be used.
 duplicityBackupPath()
 {
 	duplicity \
@@ -80,17 +82,20 @@ duplicityBackupPath()
 		"${duplicityArgs[@]}" \
 		"$1" \
 		"$cfgBackupDest/$2/${3:-$1}"
+
 	if (( $? > 0 )); then
 		echo "Failed to backup '$1'" >&2
 		return 2
 	else
 		echo "Successfully backed up '$1'"
+
 		duplicity \
 			remove-older-than "${cfgBackupTtl:-6M}" \
 			--verbosity warning \
 			--force \
 			"${duplicityArgs[@]}" \
 			"$cfgBackupDest/$2/${3:-$1}"
+
 		if (( $? > 0 )); then
 			echo "Failed to remove older files in '$2/$1'" >&2
 			return 2
@@ -100,9 +105,11 @@ duplicityBackupPath()
 	fi
 }
 
+##
+## Begin backup of the various things
+##
 if [[ $action = domains ]]; then
 	for credentialsFile in "$cfgVarStateDir"/domains/*; do
-		# Get the path of the domain name
 		domainPath=$(awk '/^path =/{print $3}' "$credentialsFile")
 		if [[ -z $domainPath || ! -d $domainPath ]]; then
 			echo "Malformed or nonexistent 'path' value in '$credentialsFile'" >&2
@@ -120,6 +127,7 @@ elif [[ $action = cron || $action = emails ]]; then
 	elif [[ $action = emails ]]; then
 		sourcePath=/var/mail/virtual
 	fi
+
 	if [[ ! -d $sourcePath ]]; then
 		echo "Unable to find '$sourcePath'" >&2
 		exitCode=2
@@ -136,10 +144,11 @@ elif [[ $action = mysql ]]; then
 		dbUser=$(awk '/^mysql_username =/{print $3}' "$credentialsFile")
 		dbPass=$(awk '/^mysql_password =/{print $3}' "$credentialsFile")
 		dbName=$(awk '/^mysql_database =/{print $3}' "$credentialsFile")
+
 		if [[ -n $dbUser && -n $dbPass && -n $dbName ]]; then
-			# Dump the MySQL database to a tmp file
 			tmpFile=$tmpDir/$dbName.sql.gz
 			(umask 177 && touch "$tmpFile")
+
 			mysqldump \
 				--host="$cfgMysqlHost" \
 				--user="$dbUser" \
@@ -147,11 +156,12 @@ elif [[ $action = mysql ]]; then
 				--lock-tables \
 				--skip-extended-insert \
 				"$dbName" | gzip > "$tmpFile"
-			# Back up the tmp file
+
 			duplicityBackupPath "$tmpFile" mysql "$dbName"
 			unlink "$tmpFile"
 		fi
 	done
+
 	# A little house keeping
 	rm -rf "$tmpDir"
 fi
