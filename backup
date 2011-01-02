@@ -142,13 +142,13 @@ elif [[ $action = mysql ]]; then
 				--lock-tables \
 				--skip-extended-insert \
 				"$dbName" | gzip > "$tmpFile"
-			if (( $? == 0 )); then
-				# Back up the tmp file
-				duplicityBackupPath "$tmpFile" mysql
-			fi
+			# Back up the tmp file
+			duplicityBackupPath "$tmpFile" mysql
 			unlink "$tmpFile"
 		fi
 	done
+	# A little house keeping
+	rm -rf "$tmpDir"
 fi
 
 unset PASSPHRASE AWS_ACCESS_KEY AWS_SECRET_ACCESS_KEY
