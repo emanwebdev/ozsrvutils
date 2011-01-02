@@ -49,7 +49,7 @@ case $1 in
 		source "$scriptDir/$1"
 		;;
 	-v)
-		echo "0.9.83"
+		echo "0.9.84"
 		;;
 	-h)
 		showHelp
