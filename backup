@@ -74,6 +74,11 @@ duplicityArgs+=("${cfgBackupDuplicityArgs[@]}")
 # then the source path ($1) will be used.
 duplicityBackupPath()
 {
+	if [[ ! -e $1 ]]; then
+		echo "Source path '$1' does not exist" >&2
+		return 2
+	fi
+
 	duplicity \
 		--verbosity warning \
 		--no-print-statistics \
