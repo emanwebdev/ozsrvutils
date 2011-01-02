@@ -91,6 +91,14 @@ duplicityBackupPath()
 		return 2
 	fi
 
+	if [[ $2 = mysql ]]; then
+		# Allow source mismatch because the MySQL database dumps are done in a
+		# temporary directory that changes on each run.
+		#
+		# TODO: this needs to be unset/removed after its used ideally.
+		duplicityArgs+=(--allow-source-mismatch)
+	fi
+
 	duplicity \
 		--verbosity warning \
 		--no-print-statistics \
