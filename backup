@@ -158,10 +158,25 @@ if [[ $backupEmails = true ]]; then
 	fi
 fi
 
-# Domain MySQL databases
+# Domain MySQL databases and the special "mysql" database
 if [[ $backupMysql = true ]]; then
 	tmpDir=$(mktemp -d --tmpdir ozsrvutils-mysql.XXX)
 
+	# First backup the "mysql" database
+	tmpFile=$tmpDir/mysql.sql.gz
+	(umask 177 && touch "$tmpFile")
+
+	mysqldump \
+		--host="$cfgMysqlHost" \
+		--user="$cfgMysqlUser" \
+		--password="$cfgMysqlPass" \
+		--lock-tables \
+		--skip-extended-insert \
+		mysql | gzip > "$tmpFile"
+
+	duplicityBackupPath "$tmpFile" mysql mysql
+
+	# Backup all databases for all domains that have been created
 	for credentialsFile in "$cfgVarStateDir"/domains/*; do
 		dbUser=$(awk '/^mysql_username =/{print $3}' "$credentialsFile")
 		dbPass=$(awk '/^mysql_password =/{print $3}' "$credentialsFile")
