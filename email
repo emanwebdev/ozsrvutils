@@ -75,8 +75,8 @@ if [[ ! -d $cfgVarStateDir/emails ]]; then
 fi
 
 # Get the different parts of the email (domain and user)
-partUser=$(echo "$optEmail" | cut -d@ -f1)
-partDomain=$(echo "$optEmail" | cut -d@ -f2)
+partUser=$(echo -n "$optEmail" | cut -d@ -f1)
+partDomain=$(echo -n "$optEmail" | cut -d@ -f2)
 
 if [[ $partUser = $partDomain || -z $partUser || -z $partDomain ]]; then
 	echo "Please provide a valid email address." >&2
@@ -192,7 +192,7 @@ actionChpasswd()
 	if [[ ! -f $credentialsFile ]]; then
 		echo "Unable to find '$credentialsFile'" >&2
 		exit 2
-	elif (( $(grep "^$optEmail:" /etc/dovecot/passwd > /dev/null; echo $?) == 1 )); then
+	elif (( $(grep "^$optEmail:" /etc/dovecot/passwd > /dev/null; echo -n $?) == 1 )); then
 		echo "No login exists for this email address" >&2
 		exit 2
 	elif (( ${#optPwd} < 6 )); then

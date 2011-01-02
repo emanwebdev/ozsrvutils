@@ -130,10 +130,10 @@ actionAdd()
 		fi
 	else
 		## Ensure the 'www-users' group exists
-		if (( $(getent group www-users > /dev/null; echo $?) == 2 )); then
+		if (( $(getent group www-users > /dev/null; echo -n $?) == 2 )); then
 			addgroup www-users
 		fi
-		optUser=$(echo "$optUser" | sed -e 's/-//g')
+		optUser=$(echo -n "$optUser" | sed -e 's/-//g')
 		if [[ -z $optPass ]]; then
 			optPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
 		fi
@@ -144,7 +144,7 @@ actionAdd()
 			exit 2
 		fi
 		adduser "$optUser" www-users > /dev/null
-		echo "$optUser":"$optPass" | chpasswd
+		echo -n "$optUser":"$optPass" | chpasswd
 	fi
 
 	## Setup the document root
@@ -154,7 +154,7 @@ actionAdd()
 
 	## Calculate the database credentials to use
 	if [[ $optCreateMysql = true ]]; then
-		sitename=$(echo "$optDomain" | cut -d. -f1 | sed -e 's/-//g')
+		sitename=$(echo -n "$optDomain" | cut -d. -f1 | sed -e 's/-//g')
 		dbPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
 		if [[ -z $optDbName ]]; then
 			dbName=${optUser}_${sitename:0:51}
@@ -169,7 +169,7 @@ actionAdd()
 		else
 			dbUser=$optDbUser
 		fi
-		dbName=$(echo "$dbName" | sed -e 's/-//g')
+		dbName=$(echo -n "$dbName" | sed -e 's/-//g')
 
 		# Create the actual database and user
 		mysql -u "$cfgMysqlUser" -p"$cfgMysqlPass" -h "$cfgMysqlHost" \
