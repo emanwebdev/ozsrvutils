@@ -147,6 +147,12 @@ actionAdd()
 		fi
 		usersHomeDir+=/$optUser
 
+		## Ensure the 'www-users' group exists
+		if (( $(getent group www-users > /dev/null; echo -n $?) == 2 )); then
+			addgroup www-users
+		fi
+		adduser "$optUser" www-users > /dev/null
+
 		## Create the new user
 		adduser --home "$usersHomeDir" --disabled-password --gecos "Created by ozsrvutils" "$optUser" > /dev/null
 		if (( $? > 0 )); then
@@ -154,12 +160,6 @@ actionAdd()
 			exit 2
 		fi
 		echo -n "$optUser":"$optPass" | chpasswd
-
-		## Ensure the 'www-users' group exists
-		if (( $(getent group www-users > /dev/null; echo -n $?) == 2 )); then
-			addgroup www-users
-		fi
-		adduser "$optUser" www-users > /dev/null
 	fi
 
 	## Setup the document root
