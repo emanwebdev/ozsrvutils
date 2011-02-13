@@ -30,9 +30,23 @@ fi
 
 if [[ -f $configFile ]]; then
 	source "$configFile"
+
 	## Ensure the var state directory exists
 	if [[ ! -d $cfgVarStateDir ]]; then
 		mkdir -p "$cfgVarStateDir"
+	fi
+
+	## Ensure that some variables have a default value
+	if [[ -f /etc/adduser.conf ]]; then
+		source /etc/adduser.conf
+
+		cfgUsersHomeDir=${cfgUsersHomeDir:-$DHOME}
+		cfgUsersHomeDirMode=${cfgUsersHomeDirMode:-$DIR_MODE}
+		cfgUsersShell=${cfgUsersShell:-$DSHELL}
+	else
+		cfgUsersHomeDir=${cfgUsersHomeDir:-/home}
+		cfgUsersHomeDirMode=${cfgUsersHomeDirMode:-0750}
+		cfgUsersShell=${cfgUsersShell:-/bin/bash}
 	fi
 else
 	echo "Unable to find config file '$configFile'" >&2

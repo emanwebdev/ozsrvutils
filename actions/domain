@@ -135,29 +135,24 @@ actionAdd()
 			optPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
 		fi
 
-		## Find out what the new users home directory should be
-		if [[ -z $cfgDomainUsersHomeDir ]]; then
-			if [[ -f /etc/adduser.conf ]]; then
-				usersHomeDir=$(grep "^DHOME=" /etc/adduser.conf | cut -d= -f2)
-			else
-				usersHomeDir=/home
-			fi
-		else
-			usersHomeDir=$cfgDomainUsersHomeDir
-		fi
-		usersHomeDir+=/$optUser
-
 		## Ensure the 'www-users' group exists
 		if (( $(getent group www-users > /dev/null; echo -n $?) == 2 )); then
 			addgroup www-users
 		fi
 
-		## Create the new user
-		adduser --home "$usersHomeDir" --disabled-password --gecos "Created by ozsrvutils" "$optUser" > /dev/null
+		## Create the new user (gecos provided or it will be interactive)
+		usersHomeDir=$cfgUsersHomeDir/$optUser
+		adduser \
+			--home "$usersHomeDir" \
+			--shell "$cfgUsersShell" \
+			--disabled-password \
+			--gecos "Created by ozsrvutils" \
+			"$optUser" > /dev/null
 		if (( $? > 0 )); then
 			echo "Failed to add new user, exiting..." >&2
 			exit 2
 		fi
+		chmod "$cfgUsersHomeDirMode" "$usersHomeDir"
 		echo -n "$optUser":"$optPass" | chpasswd
 		adduser "$optUser" www-users > /dev/null
 	fi
