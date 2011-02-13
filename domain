@@ -128,29 +128,44 @@ actionAdd()
 		else
 			optPass="[no change]"
 		fi
+		usersHomeDir=$(getent passwd "$optUser" | cut -d: -f6)
 	else
-		## Ensure the 'www-users' group exists
-		if (( $(getent group www-users > /dev/null; echo -n $?) == 2 )); then
-			addgroup www-users
-		fi
 		optUser=$(echo -n "$optUser" | sed -e 's/-//g')
 		if [[ -z $optPass ]]; then
 			optPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
 		fi
+
+		## Find out what the new users home directory should be
+		if [[ -z $cfgDomainUsersHomeDir ]]; then
+			if [[ -f /etc/adduser.conf ]]; then
+				usersHomeDir=$(grep "^DHOME=" /etc/adduser.conf | cut -d= -f2)
+			else
+				usersHomeDir=/home
+			fi
+		else
+			usersHomeDir=$cfgDomainUsersHomeDir
+		fi
+		usersHomeDir+=/$optUser
+
 		## Create the new user
-		adduser --disabled-password --gecos "Created by ozsrvutils" "$optUser" > /dev/null
+		adduser --home "$usersHomeDir" --disabled-password --gecos "Created by ozsrvutils" "$optUser" > /dev/null
 		if (( $? > 0 )); then
 			echo "Failed to add new user, exiting..." >&2
 			exit 2
 		fi
-		adduser "$optUser" www-users > /dev/null
 		echo -n "$optUser":"$optPass" | chpasswd
+
+		## Ensure the 'www-users' group exists
+		if (( $(getent group www-users > /dev/null; echo -n $?) == 2 )); then
+			addgroup www-users
+		fi
+		adduser "$optUser" www-users > /dev/null
 	fi
 
 	## Setup the document root
-	domainPath=/home/$optUser/domains/$optDomain
+	domainPath=$usersHomeDir/domains/$optDomain
 	sudo -u "$optUser" mkdir -p "$domainPath/public"
-	chown :www-data "/home/$optUser"
+	chown :www-data "$usersHomeDir"
 
 	## Calculate the database credentials to use
 	if [[ $optCreateMysql = true ]]; then
