@@ -129,7 +129,7 @@ ozldap-adduser()
 	## Set the users password
 	tmpPwdFile=$(mktemp)
 	echo -n "$pass" > "$tmpPwdFile"
-	ldappasswd "${ldapCommonArgs[@]}" -T "$tmpPwdFile" "uid=testing,ou=Users,dc=example,dc=com"
+	ldappasswd "${ldapCommonArgs[@]}" -T "$tmpPwdFile" "uid=$user,$cfgLdapUserSuffix,$cfgLdapSuffix"
 	unlink "$tmpPwdFile"
 
 	## Setup the users home directory with correct permissions
