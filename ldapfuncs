@@ -1,0 +1,191 @@
+#!/bin/bash
+
+###
+# OpenZula server utilities
+# --- Provides common functions for LDAP manipulation
+#
+# @author Alex Cartwright <alex@openzula.org>
+# @copyright Copyright (C) 2011 OpenZula
+# @license http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU/GPL 2
+###
+
+if (( $(which ldapsearch ldapadd ldapmodify ldapdelete &> /dev/null; echo -n $?) > 0 )); then
+	echo "One or more of the following commands can not be found: ldapsearch ldapadd ldapmodify ldapdelete" >&2
+	exit 2
+fi
+
+## Setup the common arguments used for connecting
+ldapCommonArgs=(-H"$cfgLdapUri" -x -D"$cfgLdapBindDn" -y"$cfgLdapBindDnPwdFile")
+
+##
+## Get the next usable group or user ID (UID/GID). If no $1 argument is provided
+## then it will assume 'user'.
+##
+## $1	user|group
+##
+ozldap-nextid()
+{
+	if [[ -z $1 || $1 = user ]]; then
+		attr=uidNumber
+		ocSearchVal=posixAccount
+		minId=$cfgLdapFirstUid
+	else
+		attr=gidNumber
+		ocSearchVal=posixGroup
+		minId=$cfgLdapFirstGid
+	fi
+
+	local id=$(ldapsearch "${ldapCommonArgs[@]}" \
+				-LLL \
+				-S $attr \
+				-b "$cfgLdapSuffix" \
+				"(objectClass=$ocSearchVal)" $attr | grep "^$attr:" | cut -d" " -f2 | tail -n1)
+
+	if [[ -z $id || $id -lt $minId ]]; then
+		echo "$minId"
+	else
+		echo "$(($id+1))"
+	fi
+	return 0
+}
+
+##
+## Adds a new group
+##
+## $1	name
+##
+ozldap-addgroup()
+{
+	if [[ -z $1 ]]; then
+		echo "ozldap-addgroup: missing group name" >&2
+		return 2
+	elif (( $(getent group "$1" > /dev/null; echo -n $?) == 0 )); then
+		echo "ozldap-addgroup: group already exists" >&2
+		return 2
+	fi
+
+	local group=$1
+	local gid=$(ozldap-nextid group)
+
+	## Attempt to add the new group using the template ldif file
+	sed -e "s/{SUFFIX}/$cfgLdapSuffix/g" \
+		-e "s/{G_SUFFIX}/$cfgLdapGroupSuffix/g" \
+		-e "s/{GROUP}/$group/g" \
+		-e "s/{GID}/$gid/g" \
+		"$configPath/ldapgroup.ldif" | ldapadd "${ldapCommonArgs[@]}"
+
+	if (( $? > 0 )); then
+		echo "ozldap-addgroup: failed to ldapadd" >&2
+		return 2
+	else
+		return 0
+	fi
+}
+
+##
+## Adds a new user
+##
+## $1	name
+## $2	plain-text password
+## $3	home directory
+##
+ozldap-adduser()
+{
+	if [[ -z $1 || -z $2 ]]; then
+		echo "ozldap-adduser: missing username and/or password" >&2
+		return 2
+	elif (( $(getent passwd "$1" > /dev/null; echo -n $?) == 0 )); then
+		echo "ozldap-adduser: user already exists" >&2
+		return 2
+	fi
+
+	local user=$1
+	local pass=$2
+	local uid=$(ozldap-nextid user)
+	local usersHomeDir=${3:-$cfgUsersHomeDir/$user}
+
+	## Add the new group of the same name
+	ozldap-addgroup "$user"
+	local gid=$(getent group "$user" | cut -d: -f3)
+	if [[ -z $gid ]]; then
+		gid=$(getent group users | cut -d: -f3)
+	fi
+
+	## Attempt to add the new user using the template ldif file
+	sed -e "s/{SUFFIX}/$cfgLdapSuffix/g" \
+		-e "s/{U_SUFFIX}/$cfgLdapUserSuffix/g" \
+		-e "s/{USER}/$user/g" \
+		-e "s/{UID}/$uid/g" \
+		-e "s/{GID}/$gid/g" \
+		-e "s|{HOME}|$usersHomeDir|g" \
+		-e "s|{SHELL}|$cfgUsersShell|g" \
+		"$configPath/ldapuser.ldif" | ldapadd "${ldapCommonArgs[@]}"
+
+	if (( $? > 0 )); then
+		echo "ozldap-adduser: failed to ldapadd" >&2
+		return 2
+	fi
+
+	## Set the users password
+	tmpPwdFile=$(mktemp)
+	echo -n "$pass" > "$tmpPwdFile"
+	ldappasswd "${ldapCommonArgs[@]}" -T "$tmpPwdFile" "uid=testing,ou=Users,dc=example,dc=com"
+	unlink "$tmpPwdFile"
+
+	## Setup the users home directory with correct permissions
+	if [[ -d $usersHomeDir ]]; then
+		echo "ozldap-adduser: home directory already exists"
+	else
+		cp -a "${SKEL:-/etc/skel}" "$usersHomeDir"
+		chmod "$cfgUsersHomeDirMode" "$usersHomeDir"
+		chown -R "$user":"$user" "$usersHomeDir"
+	fi
+
+	ozldap-addusertogroup "$user" "$user"
+
+	return 0
+}
+
+##
+## Adds an existing user to an existing LDAP group
+##
+## $1	user
+## $2	group
+##
+ozldap-addusertogroup()
+{
+	if [[ -z $1 || -z $2 ]]; then
+		echo "ozldap-addusertogroup: missing username and/or group" >&2
+		return 2
+	elif (( $(getent passwd "$1" > /dev/null; echo -n $?) > 0 )); then
+		echo "ozldap-addusertogroup: user does not exist" >&2
+		return 2
+	elif (( $(getent -s ldap group "$2" > /dev/null; echo -n $?) > 0 )); then
+		echo "ozldap-addusertogroup: group does not exist" >&2
+		return 2
+	fi
+
+	local user=$1
+	local group=$2
+
+	## Find the DN of the group so we know where to add it to
+	local dn=$(ldapsearch "${ldapCommonArgs[@]}" \
+				-LLL \
+				-b "$cfgLdapGroupSuffix,$cfgLdapSuffix" \
+				"(&(objectClass=posixGroup)(cn=$group))" dn | head -n1)
+
+	if [[ -z $dn ]]; then
+		echo "ozldap-addusertogroup: failed to find group DN" >&2
+		return 2
+	fi
+
+	## Modify the LDIF entry for the correct group
+	ldapmodify "${ldapCommonArgs[@]}" <<LDIF
+$dn
+changetype: modify
+add: memberUid
+memberUid: $user
+LDIF
+
+	return 0
+}

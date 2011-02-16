@@ -48,6 +48,11 @@ if [[ -f $configFile ]]; then
 		cfgUsersHomeDirMode=${cfgUsersHomeDirMode:-0750}
 		cfgUsersShell=${cfgUsersShell:-/bin/bash}
 	fi
+
+	## Source the LDAP functions ready to use
+	if [[ $cfgLdapEnable = true ]]; then
+		source "$scriptDir/ldapfuncs"
+	fi
 else
 	echo "Unable to find config file '$configFile'" >&2
 	exit 2

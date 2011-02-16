@@ -1,0 +1,10 @@
+dn: uid={USER},{U_SUFFIX},{SUFFIX}
+objectClass: account
+objectClass: posixAccount
+cn: {USER}
+uid: {USER}
+uidNumber: {UID}
+gidNumber: {GID}
+homeDirectory: {HOME}
+loginShell: {SHELL}
+description: ozsrvutils user

@@ -1,0 +1,5 @@
+dn: cn={GROUP},{G_SUFFIX},{SUFFIX}
+objectClass: posixGroup
+cn: {GROUP}
+gidNumber: {GID}
+description: ozsrvutils group

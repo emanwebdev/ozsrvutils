@@ -137,24 +137,36 @@ actionAdd()
 
 		## Ensure the 'www-users' group exists
 		if (( $(getent group www-users > /dev/null; echo -n $?) == 2 )); then
-			addgroup www-users
+			if [[ $cfgLdapEnable = true ]]; then
+				ozldap-addgroup www-users
+			else
+				addgroup www-users
+			fi
 		fi
 
 		## Create the new user (gecos provided or it will be interactive)
 		usersHomeDir=$cfgUsersHomeDir/$optUser
-		adduser \
-			--home "$usersHomeDir" \
-			--shell "$cfgUsersShell" \
-			--disabled-password \
-			--gecos "Created by ozsrvutils" \
-			"$optUser" > /dev/null
+		if [[ $cfgLdapEnable = true ]]; then
+			ozldap-adduser "$optUser" "$optPass" "$usersHomeDir"
+		else
+			adduser \
+				--home "$usersHomeDir" \
+				--shell "$cfgUsersShell" \
+				--disabled-password \
+				--gecos "Created by ozsrvutils" \
+				"$optUser" > /dev/null
+		fi
+
 		if (( $? > 0 )); then
 			echo "Failed to add new user, exiting..." >&2
 			exit 2
+		elif [[ $cfgLdapEnable = true ]]; then
+			ozldap-addusertogroup "$optUser" www-users
+		else
+			chmod "$cfgUsersHomeDirMode" "$usersHomeDir"
+			echo -n "$optUser":"$optPass" | chpasswd
+			adduser "$optUser" www-users > /dev/null
 		fi
-		chmod "$cfgUsersHomeDirMode" "$usersHomeDir"
-		echo -n "$optUser":"$optPass" | chpasswd
-		adduser "$optUser" www-users > /dev/null
 	fi
 
 	## Setup the document root
