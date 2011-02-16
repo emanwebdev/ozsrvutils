@@ -26,21 +26,22 @@ ldapCommonArgs=(-H"$cfgLdapUri" -x -D"$cfgLdapBindDn" -y"$cfgLdapBindDnPwdFile")
 ozldap-nextid()
 {
 	if [[ -z $1 || $1 = user ]]; then
-		attr=uidNumber
-		ocSearchVal=posixAccount
-		minId=$cfgLdapFirstUid
+		local attr=uidNumber
+		local ocSearchVal=posixAccount
+		local minId=$cfgLdapFirstUid
 	else
-		attr=gidNumber
-		ocSearchVal=posixGroup
-		minId=$cfgLdapFirstGid
+		local attr=gidNumber
+		local ocSearchVal=posixGroup
+		local minId=$cfgLdapFirstGid
 	fi
 
-	local id=$(ldapsearch "${ldapCommonArgs[@]}" \
-				-LLL \
-				-S $attr \
-				-b "$cfgLdapSuffix" \
-				"(objectClass=$ocSearchVal)" $attr | grep "^$attr:" | cut -d" " -f2 | tail -n1)
+	local results=$(ldapsearch "${ldapCommonArgs[@]}" -LLL -S $attr -b "$cfgLdapSuffix" "(objectClass=$ocSearchVal)" $attr)
+	if (( $? > 0 )); then
+		echo "ozldap-nextid: failed to ldapsearch" >&2
+		return 2
+	fi
 
+	local id=$(echo -n "$results" | grep "^$attr:" | cut -d" " -f2 | tail -n1)
 	if [[ -z $id || $id -lt $minId ]]; then
 		echo "$minId"
 	else
@@ -66,13 +67,16 @@ ozldap-addgroup()
 
 	local group=$1
 	local gid=$(ozldap-nextid group)
+	if (( $? > 0 )); then
+		return 2
+	fi
 
 	## Attempt to add the new group using the template ldif file
 	sed -e "s/{SUFFIX}/$cfgLdapSuffix/g" \
 		-e "s/{G_SUFFIX}/$cfgLdapGroupSuffix/g" \
 		-e "s/{GROUP}/$group/g" \
 		-e "s/{GID}/$gid/g" \
-		"$configPath/ldapgroup.ldif" | ldapadd "${ldapCommonArgs[@]}"
+		"$configPath/ldapgroup.ldif" | ldapadd "${ldapCommonArgs[@]}" > /dev/null
 
 	if (( $? > 0 )); then
 		echo "ozldap-addgroup: failed to ldapadd" >&2
@@ -106,9 +110,13 @@ ozldap-adduser()
 
 	## Add the new group of the same name
 	ozldap-addgroup "$user"
+	if (( $? > 0 )); then
+		echo "ozldap-adduser: failed to add user group" >&2
+		return 2
+	fi
 	local gid=$(getent group "$user" | cut -d: -f3)
 	if [[ -z $gid ]]; then
-		gid=$(getent group users | cut -d: -f3)
+		gid=$(getent group "users" | cut -d: -f3)
 	fi
 
 	## Attempt to add the new user using the template ldif file
@@ -119,7 +127,7 @@ ozldap-adduser()
 		-e "s/{GID}/$gid/g" \
 		-e "s|{HOME}|$usersHomeDir|g" \
 		-e "s|{SHELL}|$cfgUsersShell|g" \
-		"$configPath/ldapuser.ldif" | ldapadd "${ldapCommonArgs[@]}"
+		"$configPath/ldapuser.ldif" | ldapadd "${ldapCommonArgs[@]}" > /dev/null
 
 	if (( $? > 0 )); then
 		echo "ozldap-adduser: failed to ldapadd" >&2
@@ -180,12 +188,15 @@ ozldap-addusertogroup()
 	fi
 
 	## Modify the LDIF entry for the correct group
-	ldapmodify "${ldapCommonArgs[@]}" <<LDIF
-$dn
+	echo "$dn
 changetype: modify
 add: memberUid
-memberUid: $user
-LDIF
+memberUid: $user" | ldapmodify "${ldapCommonArgs[@]}" > /dev/null
 
-	return 0
+	if (( $? > 0 )); then
+		echo "ozldap-addusertogroup: failed to ldapmodify" >&2
+		return 2
+	else
+		return 0
+	fi
 }
