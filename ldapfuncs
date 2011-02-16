@@ -41,7 +41,7 @@ ozldap-nextid()
 		return 2
 	fi
 
-	local id=$(echo -n "$results" | grep "^$attr:" | cut -d" " -f2 | tail -n1)
+	local id=$(echo -n "$results" | awk '/^gidNumber:/{print $2}' | tail -n1)
 	if [[ -z $id || $id -lt $minId ]]; then
 		echo "$minId"
 	else
@@ -135,7 +135,7 @@ ozldap-adduser()
 	fi
 
 	## Set the users password
-	tmpPwdFile=$(mktemp)
+	local tmpPwdFile=$(mktemp)
 	echo -n "$pass" > "$tmpPwdFile"
 	ldappasswd "${ldapCommonArgs[@]}" -T "$tmpPwdFile" "uid=$user,$cfgLdapUserSuffix,$cfgLdapSuffix"
 	unlink "$tmpPwdFile"
