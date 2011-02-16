@@ -68,7 +68,7 @@ case $1 in
 		source "$scriptDir/actions/$1"
 		;;
 	-v)
-		echo "0.9.85"
+		echo "0.9.90"
 		;;
 	-h)
 		showHelp
