@@ -176,27 +176,16 @@ ozldap-addusertogroup()
 	local user=$1
 	local group=$2
 
-	## Find the DN of the group so we know where to add it to
-	local dn=$(ldapsearch "${ldapCommonArgs[@]}" \
-				-LLL \
-				-b "$cfgLdapGroupSuffix,$cfgLdapSuffix" \
-				"(&(objectClass=posixGroup)(cn=$group))" dn | head -n1)
-
-	if [[ -z $dn ]]; then
-		echo "ozldap-addusertogroup: failed to find group DN" >&2
-		return 2
-	fi
-
 	## Modify the LDIF entry for the correct group
-	echo "$dn
+	echo "dn: cn=$group,$cfgLdapGroupSuffix,$cfgLdapSuffix
 changetype: modify
 add: memberUid
 memberUid: $user" | ldapmodify "${ldapCommonArgs[@]}" > /dev/null
 
-	if (( $? > 0 )); then
+	if (( $? == 0 || $? == 20 )); then
+		return 0
+	else
 		echo "ozldap-addusertogroup: failed to ldapmodify" >&2
 		return 2
-	else
-		return 0
 	fi
 }
