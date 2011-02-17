@@ -6,13 +6,13 @@
 
 	ErrorLog /var/log/apache2/vhosts/{DOMAIN}_error.log
 	CustomLog /var/log/apache2/vhosts/{DOMAIN}_access.log combined
-	DocumentRoot /home/{USER}/domains/{DOMAIN}/public
+	DocumentRoot {DOMAIN_PATH}/public
 
 	## FastCGI + PHP-FPM
 	#Include php-fpm.conf
 	#FastCgiExternalServer /fcgi-extsrvs-phpfpm -socket /var/opt/php53/run/{DOMAIN}.sock -user {USER} -group {USER}
 
-	<Directory /home/{USER}/domains/{DOMAIN}/public>
+	<Directory {DOMAIN_PATH}/public>
 		Options FollowSymLinks
 		AllowOverride AuthConfig FileInfo Limit Options=Indexes
 
