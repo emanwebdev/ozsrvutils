@@ -104,202 +104,197 @@ if [[ ! -d $cfgVarStateDir/domains ]]; then
 	mkdir "$cfgVarStateDir/domains"
 fi
 
-##
-## Handle the 'add' action
-##
-actionAdd()
-{
-	if [[ -z $optUser || -z $optDomain ]]; then
-		echo "Invalid arguments, expects at least '-u' and '-d'. See '-h' for help text." >&2
-		exit 1
-	elif [[ -f $cfgVarStateDir/domains/$optDomain ]]; then
-		echo "Domain '$optDomain' already exists." >&2
-		exit 2
-	fi
-
-	## Get the ID of the user, create it if needed
-	optUser=${optUser:0:12}
-	userId=$(id -u "$optUser" 2> /dev/null)
-	if (( $? == 0 )); then
-		## Find another domain this user has and use the password from that
-		read -r existingStateFile < <(grep -lFx "username = $optUser" "$cfgVarStateDir"/domains/* 2> /dev/null)
-		if [[ -n $existingStateFile ]]; then
-			optPass=$(awk '/^password =/{print $3}' "$existingStateFile")
-		else
-			optPass="[no change]"
-		fi
-		usersHomeDir=$(getent passwd "$optUser" | cut -d: -f6)
-	else
-		optUser=$(echo -n "$optUser" | sed -e 's/-//g')
-		if [[ -z $optPass ]]; then
-			optPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
+case $action in
+	add)
+		##
+		## Handle the 'add' action
+		##
+		if [[ -z $optUser || -z $optDomain ]]; then
+			echo "Invalid arguments, expects at least '-u' and '-d'. See '-h' for help text." >&2
+			exit 1
+		elif [[ -f $cfgVarStateDir/domains/$optDomain ]]; then
+			echo "Domain '$optDomain' already exists." >&2
+			exit 2
 		fi
 
-		## Ensure the 'www-users' group exists
-		if (( $(getent group www-users > /dev/null; echo -n $?) == 2 )); then
-			if [[ $cfgLdapEnable = true ]]; then
-				ozldap-addgroup www-users
+		## Get the ID of the user, create it if needed
+		optUser=${optUser:0:12}
+		userId=$(id -u "$optUser" 2> /dev/null)
+		if (( $? == 0 )); then
+			## Find another domain this user has and use the password from that
+			read -r existingStateFile < <(grep -lFx "username = $optUser" "$cfgVarStateDir"/domains/* 2> /dev/null)
+			if [[ -n $existingStateFile ]]; then
+				optPass=$(awk '/^password =/{print $3}' "$existingStateFile")
 			else
-				addgroup www-users
+				optPass="[no change]"
+			fi
+			usersHomeDir=$(getent passwd "$optUser" | cut -d: -f6)
+		else
+			optUser=$(echo -n "$optUser" | sed -e 's/-//g')
+			if [[ -z $optPass ]]; then
+				optPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
+			fi
+
+			## Ensure the 'www-users' group exists
+			if (( $(getent group www-users > /dev/null; echo -n $?) == 2 )); then
+				if [[ $cfgLdapEnable = true ]]; then
+					ozldap-addgroup www-users
+				else
+					addgroup www-users
+				fi
+			fi
+
+			## Create the new user (gecos provided or it will be interactive)
+			usersHomeDir=$cfgUsersHomeDir/$optUser
+			if [[ $cfgLdapEnable = true ]]; then
+				ozldap-adduser "$optUser" "$optPass" "$usersHomeDir"
+			else
+				adduser \
+					--home "$usersHomeDir" \
+					--shell "$cfgUsersShell" \
+					--disabled-password \
+					--gecos "Created by ozsrvutils" \
+					"$optUser" > /dev/null
+			fi
+
+			if (( $? > 0 )); then
+				echo "Failed to add new user, exiting..." >&2
+				exit 2
+			elif [[ $cfgLdapEnable = true ]]; then
+				ozldap-addusertogroup "$optUser" www-users
+			else
+				chmod "$cfgUsersHomeDirMode" "$usersHomeDir"
+				echo -n "$optUser":"$optPass" | chpasswd
+				adduser "$optUser" www-users > /dev/null
 			fi
 		fi
 
-		## Create the new user (gecos provided or it will be interactive)
-		usersHomeDir=$cfgUsersHomeDir/$optUser
-		if [[ $cfgLdapEnable = true ]]; then
-			ozldap-adduser "$optUser" "$optPass" "$usersHomeDir"
-		else
-			adduser \
-				--home "$usersHomeDir" \
-				--shell "$cfgUsersShell" \
-				--disabled-password \
-				--gecos "Created by ozsrvutils" \
-				"$optUser" > /dev/null
+		## Setup the document root
+		domainPath=$usersHomeDir/domains/$optDomain
+		sudo -u "$optUser" mkdir -p "$domainPath/public"
+		chown :www-data "$usersHomeDir"
+
+		## Calculate the database credentials to use
+		if [[ $optCreateMysql = true ]]; then
+			sitename=$(echo -n "$optDomain" | cut -d. -f1 | sed -e 's/-//g')
+			dbPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
+			if [[ -z $optDbName ]]; then
+				dbName=${optUser}_${sitename:0:51}
+			else
+				dbName=$optDbName
+			fi
+			if [[ -z $optDbUser ]]; then
+				## Work out the max length of the name part of the DB User. Use 8 chars max from the account username
+				tmpDbUser=${optUser:0:8}
+				snMaxLength=$(( 16-(${#tmpDbUser}+1) ))
+				dbUser=${sitename: 0 : $snMaxLength}-$tmpDbUser
+			else
+				dbUser=$optDbUser
+			fi
+			dbName=$(echo -n "$dbName" | sed -e 's/-//g')
+
+			# Create the actual database and user
+			mysql -u "$cfgMysqlUser" -p"$cfgMysqlPass" -h "$cfgMysqlHost" \
+				-e "CREATE DATABASE $dbName; GRANT $cfgMysqlGrantPrivs ON $dbName.* TO '$dbUser'@'$cfgMysqlGrantHost' IDENTIFIED BY '$dbPass'"
+			if (( $? == 0 )); then
+				# Store details in a file so we can get them later
+				sudo -u "$optUser" touch "$domainPath/.ozsrvutils-mysql"
+				echo -e "$dbUser\n$dbName" > "$domainPath/.ozsrvutils-mysql"
+			else
+				echo "Failed to create MySQL database '$dbName' with user '$dbUser'" >&2
+				# Empty the values since they are no longer correct and not needed
+				dbUser=
+				dbPass=
+				dbName=
+			fi
 		fi
 
-		if (( $? > 0 )); then
-			echo "Failed to add new user, exiting..." >&2
+		## Run any additional files needed
+		export OZ_USER=$optUser OZ_DOMAIN_NAME=$optDomain OZ_DOMAIN_PATH=$domainPath
+		for postFile in "$configPath"/post-domain-add.d/*; do
+			if [[ -x $postFile ]]; then
+				(cd "$configPath/post-domain-add.d" && ./$(basename "$postFile"))
+			fi
+		done
+
+		## All done!
+		sudo -u "$optUser" touch "$domainPath/.ozsrvutils"
+		credentialsFile=$cfgVarStateDir/domains/$optDomain
+
+		touch "$credentialsFile"
+		chown root:adm "$credentialsFile"
+		chmod 0640 "$credentialsFile"
+
+		echo -e "domain = $optDomain\n" \
+				"username = $optUser\n" \
+				"password = $optPass\n" \
+				"path = $domainPath" > "$credentialsFile"
+		if [[ $optCreateMysql = true ]]; then
+			echo -e "mysql_username = $dbUser\n" \
+					"mysql_password = $dbPass\n" \
+					"mysql_database = $dbName" >> "$credentialsFile"
+		fi
+
+		sed -i -e "s#^ ##g" "$credentialsFile"
+
+		## Display the newly created file to the user
+		echo -e "Created new domain for web hosting:\n"
+		cat "$credentialsFile" | sed -e "s#^#\t#g"
+		echo -e "\nPlease restart your webserver (e.g. 'apache2ctl graceful') for the website to go live."
+		;;
+
+	delete)
+		##
+		## Handle the 'delete' action
+		##
+		if [[ -z $optDomain ]]; then
+			echo "Invalid arguments, expects at least '-d'. See '-h' for help text." >&2
+			exit 1
+		fi
+
+		credentialsFile=$cfgVarStateDir/domains/$optDomain
+		if [[ ! -f $credentialsFile ]]; then
+			echo "Unable to find '$credentialsFile'" >&2
 			exit 2
-		elif [[ $cfgLdapEnable = true ]]; then
-			ozldap-addusertogroup "$optUser" www-users
-		else
-			chmod "$cfgUsersHomeDirMode" "$usersHomeDir"
-			echo -n "$optUser":"$optPass" | chpasswd
-			adduser "$optUser" www-users > /dev/null
 		fi
-	fi
+		domainPath=$(awk '/^path =/{print $3}' "$credentialsFile")
+		user=$(awk '/^user =/{print $3}' "$credentialsFile")
 
-	## Setup the document root
-	domainPath=$usersHomeDir/domains/$optDomain
-	sudo -u "$optUser" mkdir -p "$domainPath/public"
-	chown :www-data "$usersHomeDir"
-
-	## Calculate the database credentials to use
-	if [[ $optCreateMysql = true ]]; then
-		sitename=$(echo -n "$optDomain" | cut -d. -f1 | sed -e 's/-//g')
-		dbPass=$(apg -d -n1 -m10 -x14 -M LCNS -E \/\'\\\")
-		if [[ -z $optDbName ]]; then
-			dbName=${optUser}_${sitename:0:51}
-		else
-			dbName=$optDbName
-		fi
-		if [[ -z $optDbUser ]]; then
-			## Work out the max length of the name part of the DB User. Use 8 chars max from the account username
-			tmpDbUser=${optUser:0:8}
-			snMaxLength=$(( 16-(${#tmpDbUser}+1) ))
-			dbUser=${sitename: 0 : $snMaxLength}-$tmpDbUser
-		else
-			dbUser=$optDbUser
-		fi
-		dbName=$(echo -n "$dbName" | sed -e 's/-//g')
-
-		# Create the actual database and user
-		mysql -u "$cfgMysqlUser" -p"$cfgMysqlPass" -h "$cfgMysqlHost" \
-			  -e "CREATE DATABASE $dbName; GRANT $cfgMysqlGrantPrivs ON $dbName.* TO '$dbUser'@'$cfgMysqlGrantHost' IDENTIFIED BY '$dbPass'"
-		if (( $? == 0 )); then
-			# Store details in a file so we can get them later
-			sudo -u "$optUser" touch "$domainPath/.ozsrvutils-mysql"
-			echo -e "$dbUser\n$dbName" > "$domainPath/.ozsrvutils-mysql"
-		else
-			echo "Failed to create MySQL database '$dbName' with user '$dbUser'" >&2
-			# Empty the values since they are no longer correct and not needed
-			dbUser=
-			dbPass=
-			dbName=
-		fi
-	fi
-
-	## Run any additional files needed
-	export OZ_USER=$optUser OZ_DOMAIN_NAME=$optDomain OZ_DOMAIN_PATH=$domainPath
-	for postFile in "$configPath"/post-domain-add.d/*; do
-		if [[ -x $postFile ]]; then
-			(cd "$configPath/post-domain-add.d" && ./$(basename "$postFile"))
-		fi
-	done
-
-	## All done!
-	sudo -u "$optUser" touch "$domainPath/.ozsrvutils"
-	credentialsFile=$cfgVarStateDir/domains/$optDomain
-
-	touch "$credentialsFile"
-	chown root:adm "$credentialsFile"
-	chmod 0640 "$credentialsFile"
-
-	echo -e "domain = $optDomain\n" \
-			"username = $optUser\n" \
-			"password = $optPass\n" \
-			"path = $domainPath" > "$credentialsFile"
-	if [[ $optCreateMysql = true ]]; then
-		echo -e "mysql_username = $dbUser\n" \
-				"mysql_password = $dbPass\n" \
-				"mysql_database = $dbName" >> "$credentialsFile"
-	fi
-
-	sed -i -e "s#^ ##g" "$credentialsFile"
-
-	## Display the newly created file to the user
-	echo -e "Created new domain for web hosting:\n"
-	cat "$credentialsFile" | sed -e "s#^#\t#g"
-	echo -e "\nPlease restart your webserver (e.g. 'apache2ctl graceful') for the website to go live."
-}
-
-##
-## Handle the 'delete' action
-##
-actionDelete() {
-	if [[ -z $optDomain ]]; then
-		echo "Invalid arguments, expects at least '-d'. See '-h' for help text." >&2
-		exit 1
-	fi
-
-	credentialsFile=$cfgVarStateDir/domains/$optDomain
-	if [[ ! -f $credentialsFile ]]; then
-		echo "Unable to find '$credentialsFile'" >&2
-		exit 2
-	fi
-	domainPath=$(awk '/^path =/{print $3}' "$credentialsFile")
-	user=$(awk '/^user =/{print $3}' "$credentialsFile")
-
-	## Remove MySQL Database if needed (and the user)
-	if [[ $optRemoveMysql = true && -f $domainPath/.ozsrvutils-mysql ]]; then
-		dbUser=$(head -1 "$domainPath/.ozsrvutils-mysql")
-		dbName=$(tail -1 "$domainPath/.ozsrvutils-mysql")
-		mysql -u "$cfgMysqlUser" -p"$cfgMysqlPass" -h "$cfgMysqlHost" \
-			  -e "DROP DATABASE $dbName; DROP USER '$dbUser'@'$cfgMysqlGrantHost';"
-		if (( $? == 0 )); then
-			dbRemoved=true
+		## Remove MySQL Database if needed (and the user)
+		if [[ $optRemoveMysql = true && -f $domainPath/.ozsrvutils-mysql ]]; then
+			dbUser=$(head -1 "$domainPath/.ozsrvutils-mysql")
+			dbName=$(tail -1 "$domainPath/.ozsrvutils-mysql")
+			mysql -u "$cfgMysqlUser" -p"$cfgMysqlPass" -h "$cfgMysqlHost" \
+				-e "DROP DATABASE $dbName; DROP USER '$dbUser'@'$cfgMysqlGrantHost';"
+			if (( $? == 0 )); then
+				dbRemoved=true
+			else
+				dbRemoved=false
+				echo "Failed to remove MySQL database '$dbName' and/or user '$dbUser'@'$cfgMysqlGrantHost'" >&2
+			fi
 		else
 			dbRemoved=false
-			echo "Failed to remove MySQL database '$dbName' and/or user '$dbUser'@'$cfgMysqlGrantHost'" >&2
 		fi
-	else
-		dbRemoved=false
-	fi
 
-	## Remove physical files
-	rm -rf "$domainPath"
-	unlink "$credentialsFile"
+		## Remove physical files
+		rm -rf "$domainPath"
+		unlink "$credentialsFile"
 
-	## Run any additional files needed
-	export OZ_USER=$user OZ_DOMAIN_NAME=$optDomain OZ_DOMAIN_PATH=$domainPath
-	for postFile in "$configPath"/post-domain-delete.d/*; do
-		if [[ -x $postFile ]]; then
-			(cd "$configPath/post-domain-delete.d" && ./$(basename "$postFile"))
-		fi
-	done
+		## Run any additional files needed
+		export OZ_USER=$user OZ_DOMAIN_NAME=$optDomain OZ_DOMAIN_PATH=$domainPath
+		for postFile in "$configPath"/post-domain-delete.d/*; do
+			if [[ -x $postFile ]]; then
+				(cd "$configPath/post-domain-delete.d" && ./$(basename "$postFile"))
+			fi
+		done
 
-	## All done!
-	echo -e "Deleted domain for web hosting:\n"
-	echo -e "\tDomain: $optDomain"
-	echo -e "\tPath removed: $domainPath"
-	echo -e "\tRemoved MySQL database? $dbRemoved"
-	echo -e "\nPlease restart your webserver (e.g. 'apache2ctl graceful')."
-}
-
-if [[ $action = add ]]; then
-	actionAdd
-elif [[ $action = delete ]]; then
-	actionDelete
-fi
+		## All done!
+		echo -e "Deleted domain for web hosting:\n"
+		echo -e "\tDomain: $optDomain"
+		echo -e "\tPath removed: $domainPath"
+		echo -e "\tRemoved MySQL database? $dbRemoved"
+		echo -e "\nPlease restart your webserver (e.g. 'apache2ctl graceful')."
+		;;
+esac
 
 exit 0

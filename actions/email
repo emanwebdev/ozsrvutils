@@ -83,145 +83,136 @@ if [[ $partUser = $partDomain || -z $partUser || -z $partDomain ]]; then
 	exit 2
 fi
 
-##
-## Handle the 'add 'action
-##
-actionAdd()
-{
-	grep -F "$optEmail" /etc/postfix/virtual/mb-maps > /dev/null
-	if (( $? == 0 )); then
-		echo "Email address already exists." >&2
-		exit 2
-	fi
-
-	## Let postfix know it's the final destination for this domain
-	grep -Fx "$partDomain" /etc/postfix/virtual/mb-domains > /dev/null
-	if (( $? == 1 )); then
-		echo "$partDomain" >> /etc/postfix/virtual/mb-domains
-		if (( $? == 1 )); then
-			echo "Failed to add domain to /etc/postfix/virtual/mb-domains" >&2
+case $action in
+	add)
+		##
+		## Handle the 'add 'action
+		##
+		grep -F "$optEmail" /etc/postfix/virtual/mb-maps > /dev/null
+		if (( $? == 0 )); then
+			echo "Email address already exists." >&2
 			exit 2
 		fi
-	fi
 
-	## Add the map in for this email address, grouping all emails together
-	lastEntryLn=$(grep -n -m1 "@$partDomain" /etc/postfix/virtual/mb-maps | cut -d: -f1)
-	if [[ -z $lastEntryLn ]]; then
-		echo -e "\n## $partDomain\n$optEmail\t\t\t$partDomain/$partUser/" >> /etc/postfix/virtual/mb-maps
-	else
-		sed -i "${lastEntryLn}a$optEmail\t\t\t$partDomain/$partUser/" /etc/postfix/virtual/mb-maps
-	fi
-
-	## Add in the username/password entry
-	password=$(apg -d -n1 -m10 -x14 -M LCNS)
-	echo "$optEmail":"$(dovecotpw -s SSHA -p $password)" >> /etc/dovecot/passwd
-
-	maildirmake.dovecot "/var/mail/virtual/$partDomain/$partUser" vmail
-	chown -R vmail:vmail "/var/mail/virtual/$partDomain"
-
-	postmap /etc/postfix/virtual/mb-maps
-	postfix reload 2> /dev/null
-
-	## Run any additional files needed
-	export OZ_EMAIL=$optEmail
-	for postFile in "$configPath"/post-email-add.d/*; do
-		if [[ -x $postFile ]]; then
-			(cd "$configPath/post-email-add.d" && ./$(basename "$postFile"))
+		## Let postfix know it's the final destination for this domain
+		grep -Fx "$partDomain" /etc/postfix/virtual/mb-domains > /dev/null
+		if (( $? == 1 )); then
+			echo "$partDomain" >> /etc/postfix/virtual/mb-domains
+			if (( $? == 1 )); then
+				echo "Failed to add domain to /etc/postfix/virtual/mb-domains" >&2
+				exit 2
+			fi
 		fi
-	done
 
-	## All done!
-	credentialsFile=$cfgVarStateDir/emails/$optEmail
-	touch "$credentialsFile"
-	chown root:adm "$credentialsFile"
-	chmod 0640 "$credentialsFile"
-
-	echo -e "address = $optEmail\n" \
-			"username = $optEmail\n" \
-			"password = $password\n" \
-			"server = $(cat /etc/mailname)" > "$credentialsFile"
-	sed -i -e "s#^ ##g" "$credentialsFile"
-
-	## Display the newly created file to the user
-	echo -e "New email address created:\n"
-	cat "$credentialsFile" | sed -e "s#^#\t#g"
-}
-
-##
-## Handle the 'delete' action
-##
-actionDelete()
-{
-	grep -F "$optEmail" /etc/postfix/virtual/mb-maps > /dev/null
-	if (( $? == 1 )); then
-		echo "Email address does not exist" >&2
-		exit 2
-	fi
-
-	sed -i "/^$optEmail/d" /etc/postfix/virtual/mb-maps /etc/dovecot/passwd
-	rm -rf "/var/mail/virtual/$partDomain/$partUser"
-
-	## See if there are any more emails addresses for this domain
-	if (( $(grep -Fc "@$partDomain" /etc/postfix/virtual/mb-maps) == 0 )); then
-		sed -i "/^## $partDomain/d" /etc/postfix/virtual/mb-maps
-		sed -i "/^$partDomain/d" /etc/postfix/virtual/mb-domains
-		rm -rf "/var/mail/virtual/$partDomain"
-	fi
-
-	## Run any additional files needed
-	export OZ_EMAIL=$optEmail
-	for postFile in "$configPath"/post-email-delete.d/*; do
-		if [[ -x $postFile ]]; then
-			(cd "$configPath/post-email-delete.d" && ./$(basename "$postFile"))
+		## Add the map in for this email address, grouping all emails together
+		lastEntryLn=$(grep -n -m1 "@$partDomain" /etc/postfix/virtual/mb-maps | cut -d: -f1)
+		if [[ -z $lastEntryLn ]]; then
+			echo -e "\n## $partDomain\n$optEmail\t\t\t$partDomain/$partUser/" >> /etc/postfix/virtual/mb-maps
+		else
+			sed -i "${lastEntryLn}a$optEmail\t\t\t$partDomain/$partUser/" /etc/postfix/virtual/mb-maps
 		fi
-	done
 
-	unlink "$cfgVarStateDir/emails/$optEmail" 2> /dev/null
-	postmap /etc/postfix/virtual/mb-maps
-	postfix reload 2> /dev/null
+		## Add in the username/password entry
+		password=$(apg -d -n1 -m10 -x14 -M LCNS)
+		echo "$optEmail":"$(dovecotpw -s SSHA -p $password)" >> /etc/dovecot/passwd
 
-	echo "Deleted email address '$optEmail'"
-}
+		maildirmake.dovecot "/var/mail/virtual/$partDomain/$partUser" vmail
+		chown -R vmail:vmail "/var/mail/virtual/$partDomain"
 
-##
-## Handle the 'chpasswd' action
-##
-actionChpasswd()
-{
-	credentialsFile=$cfgVarStateDir/emails/$optEmail
-	if [[ ! -f $credentialsFile ]]; then
-		echo "Unable to find '$credentialsFile'" >&2
-		exit 2
-	elif (( $(grep "^$optEmail:" /etc/dovecot/passwd > /dev/null; echo -n $?) == 1 )); then
-		echo "No login exists for this email address" >&2
-		exit 2
-	elif (( ${#optPwd} < 6 )); then
-		echo "Password must be >= 6 characters long" >&2
-		exit 2
-	fi
+		postmap /etc/postfix/virtual/mb-maps
+		postfix reload 2> /dev/null
 
-	sed -i "/^$optEmail:/d" /etc/dovecot/passwd
-	echo "$optEmail":"$(dovecotpw -s SSHA -p $optPwd)" >> /etc/dovecot/passwd
+		## Run any additional files needed
+		export OZ_EMAIL=$optEmail
+		for postFile in "$configPath"/post-email-add.d/*; do
+			if [[ -x $postFile ]]; then
+				(cd "$configPath/post-email-add.d" && ./$(basename "$postFile"))
+			fi
+		done
 
-	sed -i "s/^password = .*/password = $optPwd/" "$credentialsFile"
+		## All done!
+		credentialsFile=$cfgVarStateDir/emails/$optEmail
+		touch "$credentialsFile"
+		chown root:adm "$credentialsFile"
+		chmod 0640 "$credentialsFile"
 
-	## Run any additional files needed
-	export OZ_EMAIL=$optEmail
-	for postFile in "$configPath"/post-email-chpasswd.d/*; do
-		if [[ -x $postFile ]]; then
-			(cd "$configPath/post-email-chpasswd.d" && ./$(basename "$postFile"))
+		echo -e "address = $optEmail\n" \
+				"username = $optEmail\n" \
+				"password = $password\n" \
+				"server = $(cat /etc/mailname)" > "$credentialsFile"
+		sed -i -e "s#^ ##g" "$credentialsFile"
+
+		## Display the newly created file to the user
+		echo -e "New email address created:\n"
+		cat "$credentialsFile" | sed -e "s#^#\t#g"
+		;;
+
+	delete)
+		##
+		## Handle the 'delete' action
+		##
+		grep -F "$optEmail" /etc/postfix/virtual/mb-maps > /dev/null
+		if (( $? == 1 )); then
+			echo "Email address does not exist" >&2
+			exit 2
 		fi
-	done
 
-	echo "Updated email password"
-}
+		sed -i "/^$optEmail/d" /etc/postfix/virtual/mb-maps /etc/dovecot/passwd
+		rm -rf "/var/mail/virtual/$partDomain/$partUser"
 
-if [[ $action = add ]]; then
-	actionAdd
-elif [[ $action = delete ]]; then
-	actionDelete
-elif [[ $action = chpasswd ]]; then
-	actionChpasswd
-fi
+		## See if there are any more emails addresses for this domain
+		if (( $(grep -Fc "@$partDomain" /etc/postfix/virtual/mb-maps) == 0 )); then
+			sed -i "/^## $partDomain/d" /etc/postfix/virtual/mb-maps
+			sed -i "/^$partDomain/d" /etc/postfix/virtual/mb-domains
+			rm -rf "/var/mail/virtual/$partDomain"
+		fi
+
+		## Run any additional files needed
+		export OZ_EMAIL=$optEmail
+		for postFile in "$configPath"/post-email-delete.d/*; do
+			if [[ -x $postFile ]]; then
+				(cd "$configPath/post-email-delete.d" && ./$(basename "$postFile"))
+			fi
+		done
+
+		unlink "$cfgVarStateDir/emails/$optEmail" 2> /dev/null
+		postmap /etc/postfix/virtual/mb-maps
+		postfix reload 2> /dev/null
+
+		echo "Deleted email address '$optEmail'"
+		;;
+
+	chpasswd)
+		##
+		## Handle the 'chpasswd' action
+		##
+		credentialsFile=$cfgVarStateDir/emails/$optEmail
+		if [[ ! -f $credentialsFile ]]; then
+			echo "Unable to find '$credentialsFile'" >&2
+			exit 2
+		elif (( $(grep "^$optEmail:" /etc/dovecot/passwd > /dev/null; echo -n $?) == 1 )); then
+			echo "No login exists for this email address" >&2
+			exit 2
+		elif (( ${#optPwd} < 6 )); then
+			echo "Password must be >= 6 characters long" >&2
+			exit 2
+		fi
+
+		sed -i "/^$optEmail:/d" /etc/dovecot/passwd
+		echo "$optEmail":"$(dovecotpw -s SSHA -p $optPwd)" >> /etc/dovecot/passwd
+
+		sed -i "s/^password = .*/password = $optPwd/" "$credentialsFile"
+
+		## Run any additional files needed
+		export OZ_EMAIL=$optEmail
+		for postFile in "$configPath"/post-email-chpasswd.d/*; do
+			if [[ -x $postFile ]]; then
+				(cd "$configPath/post-email-chpasswd.d" && ./$(basename "$postFile"))
+			fi
+		done
+
+		echo "Updated email password"
+		;;
+esac
 
 exit 0
