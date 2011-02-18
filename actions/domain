@@ -187,15 +187,19 @@ case $action in
 				## Work out the max length of the name part of the DB User. Use 8 chars max from the account username
 				tmpDbUser=${optUser:0:8}
 				snMaxLength=$(( 16-(${#tmpDbUser}+1) ))
-				dbUser=${sitename: 0 : $snMaxLength}-$tmpDbUser
+				dbUser=${sitename:0:$snMaxLength}-$tmpDbUser
 			else
 				dbUser=$optDbUser
 			fi
 			dbName=$(echo -n "$dbName" | sed -e 's/-//g')
 
 			# Create the actual database and user
-			mysql -u "$cfgMysqlUser" -p"$cfgMysqlPass" -h "$cfgMysqlHost" \
-				-e "CREATE DATABASE $dbName; GRANT $cfgMysqlGrantPrivs ON $dbName.* TO '$dbUser'@'$cfgMysqlGrantHost' IDENTIFIED BY '$dbPass'"
+			mysql \
+				--host="$cfgMysqlHost" \
+				--user="$cfgMysqlUser" \
+				--password="$cfgMysqlPass" \
+				--execute="CREATE DATABASE \`$dbName\`;" \
+				--execute="GRANT $cfgMysqlGrantPrivs ON \`$dbName\`.* TO '$dbUser'@'$cfgMysqlGrantHost' IDENTIFIED BY '$dbPass';"
 			if (( $? > 0 )); then
 				echo "Failed to create MySQL database '$dbName' with user '$dbUser'" >&2
 				# Empty the values since they are no longer correct and not needed
@@ -256,8 +260,12 @@ case $action in
 			dbUser=$(awk '/^mysql_username =/{print $3}' "$credentialsFile")
 			dbName=$(awk '/^mysql_database =/{print $3}' "$credentialsFile")
 			if [[ -n $dbUser && -n $dbName ]]; then
-				mysql -u "$cfgMysqlUser" -p"$cfgMysqlPass" -h "$cfgMysqlHost" \
-					-e "DROP DATABASE $dbName; DROP USER '$dbUser'@'$cfgMysqlGrantHost';"
+				mysql \
+					--host="$cfgMysqlHost" \
+					--user="$cfgMysqlUser" \
+					--password="$cfgMysqlPass" \
+					--execute="DROP DATABASE \`$dbName\`;" \
+					--execute="DROP USER '$dbUser'@'$cfgMysqlGrantHost';"
 				if (( $? == 0 )); then
 					dbRemoved=true
 				else
