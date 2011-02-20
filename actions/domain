@@ -250,7 +250,7 @@ case $action in
 		echo -e "domain = $optDomain\n" \
 				"username = $optUser\n" \
 				"password = $optPass\n" \
-				"path = $domainPath" \
+				"path = $domainPath\n" \
 				"mysql_username = $dbUser\n" \
 				"mysql_password = $dbPass\n" \
 				"mysql_database = $dbName" | sed "s#^ ##g" > "$credentialsFile"
