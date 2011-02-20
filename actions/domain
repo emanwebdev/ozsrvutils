@@ -164,7 +164,7 @@ case $action in
 				if [[ $cfgLdapEnable = true ]]; then
 					ozldap-addgroup www-users
 				else
-					addgroup www-users
+					addgroup www-users > /dev/null
 				fi
 			fi
 
