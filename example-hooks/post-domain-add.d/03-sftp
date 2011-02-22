@@ -1,0 +1,40 @@
+#!/bin/bash
+
+##
+## post-domain-add
+## This allows you to configure chroot SFTP for all users created. Essentially
+## the users home directory must be owned and only wriable by root, which means
+## we have to use ACL to give www-data read access.
+##
+## While this does mean that users will not be able to write to their own home
+## directories, they will be able to write to any existing subfolder or file
+## that is already present. For this reason it is highly advised to create all
+## possible files you think they may need write access to (dot files/dirs, e.g.
+## .mysql_history, .ssh, .subversion, .vimrc) in the "skel" directory.
+##
+## The last step will then be to enable chroot SFTP in openssh-server, something
+## like the following:
+##
+##     Subsystem sftp internal-sftp
+##     Match Group www-users
+##         ChrootDirectory %h
+##         AllowTCPForwarding no
+##         ForceCommand internal-sftp
+##
+
+if (( $(which setfacl > /dev/null; echo -n $?) == 0 )); then
+	usersHomeDir=$(getent passwd "$OZ_USER" | awk -F: '{print $6}')
+	if [[ -n $usersHomeDir ]]; then
+		chown root:"$OZ_USER" "$usersHomeDir"
+		setfacl -m g:www-data:r-x "$usersHomeDir"
+		if (( $? > 0 )); then
+			echo "failed to modify ACL rules on '$usersHomeDir'" >&2
+			exit 2
+		fi
+	else
+		echo "failed to modify ACL rules, unable to find users home directory" >&2
+		exit 2
+	fi
+fi
+
+exit 0

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+##
+## post-domain-add
+## Configures quota limits for the user
+##
+
+if (( $(which quotatool > /dev/null; echo -n $?) == 0 )); then
+	quotatool -u "$OZ_USER" -b -q1536MB -l2048MB /home
+fi
+
+exit 0

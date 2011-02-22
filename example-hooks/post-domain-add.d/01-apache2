@@ -2,7 +2,15 @@
 
 ##
 ## post-domain-add
-## Creates the Apache2 vhost template and enables the website
+## Creates a new Apache2 vhost using the template "apache2-vhost-template" and
+## then enables this vhost. We don't however restart Apache with this, it's
+## recommended you do this your self manually when you're ready.
+##
+## The template file can have the following variables that get replace:
+##
+##    {USER}		username
+##    {DOMAIN}		domain name
+##    {DOMAIN_PATH}	Path to the domain (*not* the document root)
 ##
 
 if [[ -f apache2-vhost-template ]]; then

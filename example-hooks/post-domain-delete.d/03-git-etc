@@ -1,0 +1,25 @@
+#!/bin/bash
+
+##
+## post-domain-delete
+## If you use Git to keep track of /etc (highly advised!) then this will automatically
+## commit the correct changes so you can easily see what has happened when a
+## domain was deleted and be able to do all the lovely Git things with it.
+##
+
+if [[ -d /etc/.git ]]; then
+        if [[ -n $SUDO_USER ]]; then
+                gitAuthor="$SUDO_USER <$SUDO_USER@$(hostname -f)>"
+        else
+                gitAuthor="root <root@localhost>"
+        fi
+
+        ## Remove & added needed files
+        export GIT_DIR=/etc/.git GIT_WORK_TREE=/etc/
+        git rm "/etc/apache2/sites-available/$OZ_DOMAIN_NAME"\
+                "/etc/apache2/sites-enabled/$OZ_DOMAIN_NAME"\
+                "/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf" > /dev/null
+        git commit --author="$gitAuthor" -m "ozsrvutils/domain/delete: $OZ_DOMAIN_NAME" > /dev/null
+fi
+
+exit 0

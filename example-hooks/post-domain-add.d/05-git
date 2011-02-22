@@ -1,0 +1,28 @@
+#!/bin/bash
+
+##
+## post-domain-add
+## If you use Git to keep track of /etc (highly advised!) then this will automatically
+## commit the correct changes so you can easily see what has happened when a
+## new domain was added and be able to do all the lovely Git things with it.
+##
+
+if [[ -d /etc/.git ]]; then
+	if [[ -n $SUDO_USER ]]; then
+		gitAuthor="$SUDO_USER <$SUDO_USER@$(hostname -f)>"
+	else
+		gitAuthor="root <root@localhost>"
+	fi
+	## Added the needed files to the git repo
+	export GIT_DIR=/etc/.git GIT_WORK_TREE=/etc/
+	git add "/etc/apache2/sites-available/$OZ_DOMAIN_NAME"\
+			"/etc/apache2/sites-enabled/$OZ_DOMAIN_NAME"\
+			"/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf"\
+			/etc/group\
+			/etc/gshadow\
+			/etc/passwd\
+			/etc/shadow > /dev/null
+	git commit --author="$gitAuthor" -m "ozsrvutils/domain/add: $OZ_DOMAIN_NAME" > /dev/null
+fi
+
+exit 0

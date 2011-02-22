@@ -1,0 +1,25 @@
+#!/bin/bash
+
+##
+## post-domain-add
+## Creates the PHP-FPM configuration file for the new domain using the template
+## "apache2-vhost-template". php53-fpm is then reloaded once created.
+##
+## The template file can have the following variables that get replace:
+##
+##    {USER}		username
+##    {DOMAIN}		domain name
+##    {DOMAIN_PATH}	Path to the domain (*not* the document root)
+##
+
+if [[ -f php-fpm-template && -f /etc/init.d/php53-fpm ]]; then
+        sed -e "s/{USER}/$OZ_USER/g" \
+            -e "s/{DOMAIN}/$OZ_DOMAIN_NAME/g" \
+            -e "s|{DOMAIN_PATH}|$OZ_DOMAIN_PATH|g" \
+            php-fpm-template > "/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf"
+        /etc/init.d/php53-fpm reload > /dev/null
+        exit 0
+else
+        echo "'php-fpm-template' or '/etc/init.d/php53-fpm' does not exist, unable to create PHP FPM config" >&2
+        exit 2
+fi

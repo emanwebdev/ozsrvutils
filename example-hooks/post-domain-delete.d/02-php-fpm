@@ -1,0 +1,13 @@
+#!/bin/bash
+
+##
+## post-domain-delete
+## Removes the PHP-FPM configuration file and reloads php53-fpm
+##
+
+if [[ -f /etc/init.d/php53-fpm ]]; then
+	unlink "/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf"
+	/etc/init.d/php53-fpm reload > /dev/null
+fi
+
+exit 0
