@@ -5,7 +5,7 @@
 ## Configures quota limits for the user
 ##
 
-if which quotatool > /dev/null; then
+if type quotatool &> /dev/null; then
 	quotatool -u "$OZ_USER" -b -q1536MB -l2048MB /home
 fi
 

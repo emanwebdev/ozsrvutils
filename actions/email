@@ -33,10 +33,12 @@
 # prior written authorization.
 ###
 
-if ! which postfix postmap dovecotpw &> /dev/null; then
-	echo "One or more of the following commands can not be found: postfix, postmap, dovecotpw" >&2
-	exit 2
-fi
+for dependency in postfix postmap dovecotpw; do
+	if ! type "$dependency" &> /dev/null; then
+		echo "'$dependency' was not found or does not exist" >&2
+		exit 2
+	fi
+done
 
 case $2 in
 	--add|--chpasswd|--delete)

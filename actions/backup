@@ -33,7 +33,7 @@
 # prior written authorization.
 ###
 
-if ! which duplicity &> /dev/null; then
+if ! type duplicity &> /dev/null; then
 	echo "One or more of the following commands can not be found: duplicity" >&2
 	exit 2
 fi

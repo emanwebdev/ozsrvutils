@@ -22,12 +22,11 @@
 ##         ForceCommand internal-sftp
 ##
 
-if which setfacl > /dev/null; then
+if type setfacl &> /dev/null; then
 	usersHomeDir=$(getent passwd "$OZ_USER" | awk -F: '{print $6}')
 	if [[ -n $usersHomeDir ]]; then
 		chown root:"$OZ_USER" "$usersHomeDir"
-		setfacl -m g:www-data:r-x "$usersHomeDir"
-		if (( $? > 0 )); then
+		if ! setfacl -m g:www-data:r-x "$usersHomeDir"; then
 			echo "failed to modify ACL rules on '$usersHomeDir'" >&2
 			exit 2
 		fi
