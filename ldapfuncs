@@ -33,7 +33,7 @@
 # prior written authorization.
 ###
 
-if (( $(which ldapsearch ldapadd ldapmodify ldapdelete &> /dev/null; echo -n $?) > 0 )); then
+if ! which ldapsearch ldapadd ldapmodify ldapdelete &> /dev/null; then
 	echo "One or more of the following commands can not be found: ldapsearch ldapadd ldapmodify ldapdelete" >&2
 	exit 2
 fi
@@ -84,7 +84,7 @@ ozldap-addgroup()
 	if [[ -z $1 ]]; then
 		echo "ozldap-addgroup: missing group name" >&2
 		return 2
-	elif (( $(getent group "$1" > /dev/null; echo -n $?) == 0 )); then
+	elif getent group "$1" > /dev/null; then
 		echo "ozldap-addgroup: group already exists" >&2
 		return 2
 	fi
@@ -122,7 +122,7 @@ ozldap-adduser()
 	if [[ -z $1 || -z $2 ]]; then
 		echo "ozldap-adduser: missing username and/or password" >&2
 		return 2
-	elif (( $(getent passwd "$1" > /dev/null; echo -n $?) == 0 )); then
+	elif getent passwd "$1" > /dev/null; then
 		echo "ozldap-adduser: user already exists" >&2
 		return 2
 	fi
@@ -133,8 +133,7 @@ ozldap-adduser()
 	local usersHomeDir=${3:-$cfgUsersHomeDir/$user}
 
 	## Add the new group of the same name
-	ozldap-addgroup "$user"
-	if (( $? > 0 )); then
+	if ! ozldap-addgroup "$user"; then
 		echo "ozldap-adduser: failed to add user group" >&2
 		return 2
 	fi
@@ -189,10 +188,10 @@ ozldap-addusertogroup()
 	if [[ -z $1 || -z $2 ]]; then
 		echo "ozldap-addusertogroup: missing username and/or group" >&2
 		return 2
-	elif (( $(getent passwd "$1" > /dev/null; echo -n $?) > 0 )); then
+	elif ! getent passwd "$1" > /dev/null; then
 		echo "ozldap-addusertogroup: user does not exist" >&2
 		return 2
-	elif (( $(getent -s ldap group "$2" > /dev/null; echo -n $?) > 0 )); then
+	elif ! getent -s ldap group "$2" > /dev/null; then
 		echo "ozldap-addusertogroup: group does not exist" >&2
 		return 2
 	fi

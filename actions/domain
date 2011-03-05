@@ -160,7 +160,7 @@ case $action in
 			fi
 
 			## Ensure the 'www-users' group exists
-			if (( $(getent group www-users > /dev/null; echo -n $?) == 2 )); then
+			if ! getent group www-users > /dev/null; then
 				if [[ $cfgLdapEnable = true ]]; then
 					ozldap-addgroup www-users
 				else

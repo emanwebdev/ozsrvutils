@@ -33,7 +33,7 @@
 # prior written authorization.
 ###
 
-if (( $(which duplicity &> /dev/null; echo -n $?) > 0 )); then
+if ! which duplicity &> /dev/null; then
 	echo "One or more of the following commands can not be found: duplicity" >&2
 	exit 2
 fi
@@ -160,10 +160,7 @@ duplicityBackupPath()
 
 # cron
 if [[ $backupCron = true ]]; then
-	duplicityBackupPath /var/spool/cron cron
-	if (( $? > 0 )); then
-		exitCode=2
-	fi
+	duplicityBackupPath /var/spool/cron cron || exitCode=2
 fi
 
 # Domain document roots
@@ -184,10 +181,7 @@ fi
 
 # Virtual email addresses
 if [[ $backupEmails = true ]]; then
-	duplicityBackupPath /var/mail/virtual emails
-	if (( $? > 0 )); then
-		exitCode=2
-	fi
+	duplicityBackupPath /var/mail/virtual emails || exitCode=2
 fi
 
 # Domain MySQL databases and the special "mysql" database

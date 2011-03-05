@@ -33,7 +33,7 @@
 # prior written authorization.
 ###
 
-if (( $(which postfix postmap dovecotpw &> /dev/null; echo $?) > 0 )); then
+if ! which postfix postmap dovecotpw &> /dev/null; then
 	echo "One or more of the following commands can not be found: postfix, postmap, dovecotpw" >&2
 	exit 2
 fi
@@ -112,15 +112,13 @@ case $action in
 		##
 		## Handle the 'add 'action
 		##
-		grep -F "$optEmail" /etc/postfix/virtual/mb-maps > /dev/null
-		if (( $? == 0 )); then
+		if grep -Fq "$optEmail" /etc/postfix/virtual/mb-maps; then
 			echo "Email address already exists." >&2
 			exit 2
 		fi
 
 		## Let postfix know it's the final destination for this domain
-		grep -Fx "$partDomain" /etc/postfix/virtual/mb-domains > /dev/null
-		if (( $? == 1 )); then
+		if ! grep -Fxq "$partDomain" /etc/postfix/virtual/mb-domains; then
 			echo "$partDomain" >> /etc/postfix/virtual/mb-domains
 			if (( $? == 1 )); then
 				echo "Failed to add domain to /etc/postfix/virtual/mb-domains" >&2
@@ -175,8 +173,7 @@ case $action in
 		##
 		## Handle the 'delete' action
 		##
-		grep -F "$optEmail" /etc/postfix/virtual/mb-maps > /dev/null
-		if (( $? == 1 )); then
+		if ! grep -Fq "$optEmail" /etc/postfix/virtual/mb-maps; then
 			echo "Email address does not exist" >&2
 			exit 2
 		fi
@@ -185,7 +182,7 @@ case $action in
 		rm -rf "/var/mail/virtual/$partDomain/$partUser"
 
 		## See if there are any more emails addresses for this domain
-		if (( $(grep -Fc "@$partDomain" /etc/postfix/virtual/mb-maps) == 0 )); then
+		if ! grep -Fq "@$partDomain" /etc/postfix/virtual/mb-maps; then
 			sed -i "/^## $partDomain/d" /etc/postfix/virtual/mb-maps
 			sed -i "/^$partDomain/d" /etc/postfix/virtual/mb-domains
 			rm -rf "/var/mail/virtual/$partDomain"
@@ -214,7 +211,7 @@ case $action in
 		if [[ ! -f $credentialsFile ]]; then
 			echo "Unable to find '$credentialsFile'" >&2
 			exit 2
-		elif (( $(grep "^$optEmail:" /etc/dovecot/passwd > /dev/null; echo -n $?) == 1 )); then
+		elif ! grep -q "^$optEmail:" /etc/dovecot/passwd; then
 			echo "No login exists for this email address" >&2
 			exit 2
 		elif (( ${#optPwd} < 6 )); then
