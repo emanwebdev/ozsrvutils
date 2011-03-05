@@ -160,15 +160,14 @@ case $action in
 		chown root:adm "$credentialsFile"
 		chmod 0640 "$credentialsFile"
 
-		echo -e "address = $optEmail\n" \
-				"username = $optEmail\n" \
-				"password = $password\n" \
-				"server = $(cat /etc/mailname)" > "$credentialsFile"
-		sed -i -e "s#^ ##g" "$credentialsFile"
+		echo "address = $optEmail
+username = $optEmail
+password = $password
+server = $(cat /etc/mailname)" > "$credentialsFile"
 
 		## Display the newly created file to the user
 		echo -e "New email address created:\n"
-		cat "$credentialsFile" | sed -e "s#^#\t#g"
+		sed "s#^#\t#g" "$credentialsFile"
 		;;
 
 	delete)
