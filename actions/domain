@@ -247,17 +247,18 @@ case $action in
 		chown root:adm "$credentialsFile"
 		chmod 0640 "$credentialsFile"
 
-		echo -e "domain = $optDomain\n" \
-				"username = $optUser\n" \
-				"password = $optPass\n" \
-				"path = $domainPath\n" \
-				"mysql_username = $dbUser\n" \
-				"mysql_password = $dbPass\n" \
-				"mysql_database = $dbName" | sed "s#^ ##g" > "$credentialsFile"
+		echo "domain = $optDomain
+username = $optUser
+password = $optPass
+path = $domainPath
+mysql_host = $cfgMysqlHost
+mysql_username = $dbUser
+mysql_password = $dbPass
+mysql_database = $dbName" > "$credentialsFile"
 
 		## Display the newly created file to the user
 		echo -e "Created new domain for web hosting:\n"
-		cat "$credentialsFile" | sed -e "s#^#\t#g"
+		sed "s#^#\t#g" "$credentialsFile"
 		echo -e "\nPlease restart your webserver (e.g. 'apache2ctl graceful') for the website to go live."
 		;;
 
