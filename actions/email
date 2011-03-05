@@ -162,8 +162,7 @@ case $action in
 
 		echo "address = $optEmail
 username = $optEmail
-password = $password
-server = $(cat /etc/mailname)" > "$credentialsFile"
+password = $password" > "$credentialsFile"
 
 		## Display the newly created file to the user
 		echo -e "New email address created:\n"
