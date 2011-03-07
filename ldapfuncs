@@ -61,7 +61,8 @@ ozldap-nextid()
 		local minId=$cfgLdapFirstGid
 	fi
 
-	local results=$(ldapsearch "${ldapCommonArgs[@]}" -LLL -S $attr -b "$cfgLdapSuffix" "(objectClass=$ocSearchVal)" $attr)
+	local results
+	results=$(ldapsearch "${ldapCommonArgs[@]}" -LLL -S $attr -b "$cfgLdapSuffix" "(objectClass=$ocSearchVal)" $attr)
 	if (( $? > 0 )); then
 		echo "ozldap-nextid: failed to ldapsearch" >&2
 		return 2
@@ -92,7 +93,8 @@ ozldap-addgroup()
 	fi
 
 	local group=$1
-	local gid=$(ozldap-nextid group)
+	local gid
+	gid=$(ozldap-nextid group)
 	if (( $? > 0 )); then
 		return 2
 	fi
