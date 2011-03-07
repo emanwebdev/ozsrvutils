@@ -22,18 +22,15 @@
 ##         ForceCommand internal-sftp
 ##
 
-if type setfacl &> /dev/null; then
-	usersHomeDir=$(getent passwd "$OZ_USER" | awk -F: '{print $6}')
-	if [[ -n $usersHomeDir ]]; then
-		chown root:"$OZ_USER" "$usersHomeDir"
-		if ! setfacl -m g:www-data:r-x "$usersHomeDir"; then
-			echo "failed to modify ACL rules on '$usersHomeDir'" >&2
-			exit 2
-		fi
-	else
-		echo "failed to modify ACL rules, unable to find users home directory" >&2
-		exit 2
-	fi
+if ! type setfacl &> /dev/null; then
+	echo "post-domain-add/sftp: 'setfacl' was not found or does not exist" >&2
+	exit 2
 fi
 
-exit 0
+usersHomeDir=$(getent passwd "$OZ_USER" | awk -F: '{print $6}')
+if [[ ! -n $usersHomeDir ]]; then
+	echo "post-domain-add/sftp: unable to find users home directory" >&2
+	exit 2
+fi
+
+chown root:"$OZ_USER" "$usersHomeDir" && setfacl -m g:www-data:r-x "$usersHomeDir"

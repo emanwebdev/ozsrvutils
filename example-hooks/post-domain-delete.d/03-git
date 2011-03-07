@@ -7,13 +7,18 @@
 ## domain was deleted and be able to do all the lovely Git things with it.
 ##
 
-if [[ -d /etc/.git ]]; then
-        gitAuthorName=${SUDO_USER:-root}
-        export GIT_DIR=/etc/.git GIT_WORK_TREE=/etc/
-        git rm "/etc/apache2/sites-available/$OZ_DOMAIN_NAME"\
-                "/etc/apache2/sites-enabled/$OZ_DOMAIN_NAME"\
-                "/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf" > /dev/null
-        git commit --author="$gitAuthorName <$gitAuthorName@$(hostname -f)>" -m "ozsrvutils/domain/delete: $OZ_DOMAIN_NAME" > /dev/null
+if ! type git &> /dev/null; then
+	echo "post-domain-delete/git: 'git' was not found or does not exist" >&2
+	exit 2
+elif [[ ! -d /etc/.git ]]; then
+	echo "post-domain-delete/git: /etc does not appear to be a Git repository" >&2
+	exit 2
 fi
 
-exit 0
+gitAuthorName=${SUDO_USER:-root}
+export GIT_DIR=/etc/.git GIT_WORK_TREE=/etc/
+
+git rm "/etc/apache2/sites-available/$OZ_DOMAIN_NAME"\
+		"/etc/apache2/sites-enabled/$OZ_DOMAIN_NAME"\
+		"/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf" > /dev/null
+git commit --author="$gitAuthorName <$gitAuthorName@$(hostname -f)>" -m "ozsrvutils/domain/delete: $OZ_DOMAIN_NAME" > /dev/null

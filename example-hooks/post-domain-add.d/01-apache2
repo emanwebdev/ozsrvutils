@@ -13,14 +13,16 @@
 ##    {DOMAIN_PATH}	Path to the domain (*not* the document root)
 ##
 
-if [[ -f apache2-vhost-template ]]; then
-	sed -e "s/{USER}/$OZ_USER/g" \
-		-e "s/{DOMAIN}/$OZ_DOMAIN_NAME/g" \
-		-e "s|{DOMAIN_PATH}|$OZ_DOMAIN_PATH|g" \
-		apache2-vhost-template > "/etc/apache2/sites-available/$OZ_DOMAIN_NAME"
-	a2ensite "$OZ_DOMAIN_NAME" > /dev/null
-	exit 0
-else
-	echo "'apache2-vhost-template' does not exist, unable to create vhost config" >&2
+if ! type a2ensite &> /dev/null; then
+	echo "post-domain-add/apache2: 'a2ensite' was not found or does not exist" >&2
+	exit 2
+elif [[ ! -f apache2-vhost-template ]]; then
+	echo "post-domain-add/apache2: 'apache2-vhost-template' does not exist" >&2
 	exit 2
 fi
+
+sed -e "s/{USER}/$OZ_USER/g" \
+	-e "s/{DOMAIN}/$OZ_DOMAIN_NAME/g" \
+	-e "s|{DOMAIN_PATH}|$OZ_DOMAIN_PATH|g" \
+	apache2-vhost-template > "/etc/apache2/sites-available/$OZ_DOMAIN_NAME"
+a2ensite "$OZ_DOMAIN_NAME" > /dev/null

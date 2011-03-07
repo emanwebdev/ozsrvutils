@@ -5,9 +5,14 @@
 ## Removes the PHP-FPM configuration file and reloads php53-fpm
 ##
 
-if [[ -f /etc/init.d/php53-fpm ]]; then
-	unlink "/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf"
-	/etc/init.d/php53-fpm reload > /dev/null
+if [[ ! -f /etc/init.d/php53-fpm ]]; then
+	echo "post-domain-delete/php-fpm: '/etc/init.d/php53-fpm' does not exist" >&2
+	exit 2
 fi
 
-exit 0
+fpmConfFile=/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf
+if [[ ! -f $fpmConfFile ]]; then
+	exit 0
+fi
+
+unlink "$fpmConfFile" && /etc/init.d/php53-fpm reload > /dev/null

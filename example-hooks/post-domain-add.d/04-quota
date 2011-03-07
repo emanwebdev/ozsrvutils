@@ -5,8 +5,9 @@
 ## Configures quota limits for the user
 ##
 
-if type quotatool &> /dev/null; then
-	quotatool -u "$OZ_USER" -b -q1536MB -l2048MB /home
+if ! type quotatool &> /dev/null; then
+	echo "post-domain-add/quota: 'quotatool' was not found or does not exist" >&2
+	exit 2
 fi
 
-exit 0
+quotatool -u "$OZ_USER" -b -q1536MB -l2048MB /home
