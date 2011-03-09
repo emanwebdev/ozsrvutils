@@ -243,9 +243,8 @@ case $action in
 
 		## All done!
 		credentialsFile=$cfgVarStateDir/domains/$optDomain
-		touch "$credentialsFile"
+		(umask 026; touch "$credentialsFile")
 		chown root:adm "$credentialsFile"
-		chmod 0640 "$credentialsFile"
 
 		echo "domain = $optDomain
 username = $optUser

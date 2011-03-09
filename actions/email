@@ -156,9 +156,8 @@ case $action in
 
 		## All done!
 		credentialsFile=$cfgVarStateDir/emails/$optEmail
-		touch "$credentialsFile"
+		(umask 026; touch "$credentialsFile")
 		chown root:adm "$credentialsFile"
-		chmod 0640 "$credentialsFile"
 
 		echo "address = $optEmail
 username = $optEmail
