@@ -64,11 +64,7 @@ do
 			optEmail=$OPTARG
 			;;
 		d)
-			if [[ $OPTARG =~ ^www\. ]]; then
-				optDomain=${OPTARG:4}
-			else
-				optDomain=$OPTARG
-			fi
+			optDomain=${OPTARG#www.*}
 			;;
 		h)
 			echo "OpenZula server utilities"

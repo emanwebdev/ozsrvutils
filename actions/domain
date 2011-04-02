@@ -69,11 +69,7 @@ while getopts ":d:j:nm:p:u:h" OPTION
 do
 	case $OPTION in
 		d)
-			if [[ $OPTARG =~ ^www\. ]]; then
-				optDomain=${OPTARG:4}
-			else
-				optDomain=$OPTARG
-			fi
+			optDomain=${OPTARG#www.*}
 			;;
 		j)
 			optDbUser=$OPTARG
