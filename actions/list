@@ -35,7 +35,7 @@
 
 case $2 in
 	--domains|--emails)
-		ls -1 "$cfgVarStateDir/${2:2}/" 2> /dev/null
+		ls -1 "$cfgVarStateDir/${2:2}/" 2> /dev/null | sort -n
 		;;
 	-h)
 		echo "OpenZula server utilities"
