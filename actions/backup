@@ -167,14 +167,12 @@ fi
 if [[ $backupDomains = true ]]; then
 	for credentialsFile in "$cfgVarStateDir"/domains/*; do
 		domainPath=$(awk '/^path =/{print $3}' "$credentialsFile")
+
 		if [[ -z $domainPath || ! -d $domainPath ]]; then
 			echo "Malformed or nonexistent 'path' value in '$credentialsFile'" >&2
 			exitCode=2
-		else
-			duplicityBackupPath "$domainPath" domains
-			if (( $? > 0 )); then
-				exitCode=2
-			fi
+		elif ! duplicityBackupPath "$domainPath" domains; then
+			exitCode=2
 		fi
 	done
 fi
