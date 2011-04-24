@@ -115,12 +115,11 @@ duplicityBackupPath()
 		return 2
 	fi
 
+	local configArgs=$duplicityArgs
 	if [[ $2 = mysql ]]; then
 		# Allow source mismatch because the MySQL database dumps are done in a
 		# temporary directory that changes on each run.
-		#
-		# TODO: this needs to be unset/removed after its used ideally.
-		duplicityArgs+=(--allow-source-mismatch)
+		configArgs+=(--allow-source-mismatch)
 	fi
 
 	duplicity \
@@ -128,7 +127,7 @@ duplicityBackupPath()
 		--no-print-statistics \
 		--full-if-older-than 1M \
 		--volsize 100 \
-		"${duplicityArgs[@]}" \
+		"${configArgs[@]}" \
 		"$1" \
 		"$cfgBackupDest/$2/${3:-$1}"
 
@@ -142,7 +141,7 @@ duplicityBackupPath()
 			remove-older-than "${cfgBackupTtl:-6M}" \
 			--verbosity warning \
 			--force \
-			"${duplicityArgs[@]}" \
+			"${configArgs[@]}" \
 			"$cfgBackupDest/$2/${3:-$1}"
 
 		if (( $? > 0 )); then
