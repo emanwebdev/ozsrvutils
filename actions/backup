@@ -41,12 +41,16 @@ fi
 case $2 in
 	--all)
 		backupCron=true
+		backupDetails=true
 		backupDomains=true
 		backupEmails=true
 		backupMysql=true
 		;;
 	--cron)
 		backupCron=true
+		;;
+	--details)
+		backupDetails=true
 		;;
 	--domains)
 		backupDomains=true
@@ -60,12 +64,12 @@ case $2 in
 	-h)
 		echo "OpenZula server utilities"
 		echo "Usage:"
-		echo -e "\t$scriptName backup [--all|--cron --domains --emails --mysql]\n"
+		echo -e "\t$scriptName backup [--all|--cron --details --domains --emails --mysql]\n"
 		echo "Report bugs to <alex@openzula.org>"
 		exit 0
 		;;
 	*)
-		echo "Invalid action '$2'. Use '--all', '--cron', '--domains', '--emails' or '--mysql'" >&2
+		echo "Invalid action '$2'. Use '--all', '--cron', '--details', '--domains', '--emails' or '--mysql'" >&2
 		exit 1
 		;;
 esac
@@ -160,6 +164,11 @@ duplicityBackupPath()
 # cron
 if [[ $backupCron = true ]]; then
 	duplicityBackupPath /var/spool/cron cron || exitCode=2
+fi
+
+# details of domains and emails
+if [[ $backupDetails = true ]]; then
+	duplicityBackupPath "$cfgVarStateDir" details || exitCode=2
 fi
 
 # Domain document roots
