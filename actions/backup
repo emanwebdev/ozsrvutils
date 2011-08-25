@@ -45,6 +45,7 @@ case $2 in
 		backupDomains=true
 		backupEmails=true
 		backupMysql=true
+		backupPackageList=true
 		;;
 	--cron)
 		backupCron=true
@@ -61,15 +62,18 @@ case $2 in
 	--mysql)
 		backupMysql=true
 		;;
+	--package-list)
+		backupPackageList=true
+		;;
 	-h)
 		echo "OpenZula server utilities"
 		echo "Usage:"
-		echo -e "\t$scriptName backup [--all|--cron --details --domains --emails --mysql]\n"
+		echo -e "\t$scriptName backup [--all|--cron --details --domains --emails --mysql --package-list]\n"
 		echo "Report bugs to <alex@openzula.org>"
 		exit 0
 		;;
 	*)
-		echo "Invalid action '$2'. Use '--all', '--cron', '--details', '--domains', '--emails' or '--mysql'" >&2
+		echo "Invalid action '$2'. Use '--all', '--cron', '--details', '--domains', '--emails', '--mysql' or '--package-list'" >&2
 		exit 1
 		;;
 esac
@@ -120,9 +124,9 @@ duplicityBackupPath()
 	fi
 
 	local configArgs=$duplicityArgs
-	if [[ $2 = mysql ]]; then
-		# Allow source mismatch because the MySQL database dumps are done in a
-		# temporary directory that changes on each run.
+	if [[ $2 = mysql || $2 = packagelist ]]; then
+		# Allow source mismatch as these use temporary files or directories
+		# that will change each run.
 		configArgs+=(--allow-source-mismatch)
 	fi
 
@@ -232,6 +236,15 @@ if [[ $backupMysql = true ]]; then
 	done
 
 	rm -rf "$tmpDir"
+fi
+
+# Installed package list
+if [[ $backupPackageList = true ]]; then
+	tmpFile=$(mktemp)
+	dpkg --get-selections > "$tmpFile"
+
+	duplicityBackupPath "$tmpFile" packagelist packagelist
+	unlink "$tmpFile"
 fi
 
 unset PASSPHRASE AWS_ACCESS_KEY AWS_SECRET_ACCESS_KEY
