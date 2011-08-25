@@ -129,7 +129,7 @@ duplicityBackupPath()
 	duplicity \
 		--verbosity warning \
 		--no-print-statistics \
-		--full-if-older-than 1M \
+		--full-if-older-than "${cfgBackupFullInterval:-1M}" \
 		--volsize 100 \
 		"${configArgs[@]}" \
 		"$1" \
