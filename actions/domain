@@ -110,6 +110,14 @@ do
 				echo "Options:"
 				echo -e "\t-d\tDomain name of the website to be deleted."
 				echo -e "\t-n\t(optional) Do *not* remove associated MySQL database (if available)."
+			elif [[ $action = enable ]]; then
+				echo -e "\t$scriptName domain --enable -d domain\n"
+				echo "Options:"
+				echo -e "\t-d\tDomain name of the website to be enabled."
+			elif [[ $action = disable ]]; then
+				echo -e "\t$scriptName domain --enable -d domain\n"
+				echo "Options:"
+				echo -e "\t-d\tDomain name of the website to be disabled."
 			fi
 			echo -e "\t-h\tDisplays this help text.\n"
 			echo "Report bugs to <alex@openzula.org>"
