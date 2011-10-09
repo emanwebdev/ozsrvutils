@@ -11,8 +11,6 @@ if [[ ! -f /etc/init.d/php53-fpm ]]; then
 fi
 
 fpmConfFile=/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf
-if [[ ! -f $fpmConfFile ]]; then
-	exit 0
-fi
+rm -f "$fpmConfFile" "$fpmConfFile.disabled" && /etc/init.d/php53-fpm reload > /dev/null
 
-unlink "$fpmConfFile" && /etc/init.d/php53-fpm reload > /dev/null
+exit 0
