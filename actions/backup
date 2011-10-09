@@ -123,7 +123,7 @@ duplicityBackupPath()
 		return 2
 	fi
 
-	local configArgs=$duplicityArgs
+	local configArgs=("${duplicityArgs[@]}")
 	if [[ $2 = mysql || $2 = packagelist ]]; then
 		# Allow source mismatch as these use temporary files or directories
 		# that will change each run.
