@@ -55,7 +55,7 @@ case $2 in
 		echo "Usage:"
 		echo -e "\t$scriptName domain --add -d domain -u user [-p password] [-m dbname] [-j dbuser] [-hn]"
 		echo -e "\t$scriptName domain --delete -d domain [-mh]"
-		echo -e "\t$scriptName domain --enable -d domainn"
+		echo -e "\t$scriptName domain --enable -d domain"
 		echo -e "\t$scriptName domain --disable -d domain\n"
 		echo "Report bugs to <alex@openzula.org>"
 		exit 0
