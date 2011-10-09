@@ -1,0 +1,16 @@
+#!/bin/bash
+
+##
+## post-domain-disable
+## Disables the PHP-FPM configuration and then reloads php53-fpm
+##
+
+if [[ ! -f /etc/init.d/php53-fpm ]]; then
+	echo "post-domain-disable/php-fpm: '/etc/init.d/php53-fpm' does not exist" >&2
+	exit 2
+fi
+
+fpmConfFile=/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf
+mv "$fpmConfFile" "$fpmConfFile.disabled" 2> /dev/null && /etc/init.d/php53-fpm reload > /dev/null
+
+exit 0

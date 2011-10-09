@@ -1,0 +1,14 @@
+#!/bin/bash
+
+##
+## post-domain-disable
+## Disables the Apache2 vhost
+##
+
+if ! type a2dissite &> /dev/null; then
+	echo "post-domain-disable/apache2: 'a2dissite' was not found or does not exist" >&2
+	exit 2
+elif ! a2dissite "$OZ_DOMAIN_NAME" > /dev/null; then
+	echo "post-domain-disable/apache2: failed to disable domain '$OZ_DOMAIN_NAME'" >&2
+	exit 2
+fi

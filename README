@@ -78,6 +78,16 @@ post-domain-delete:
     OZ_DOMAIN_NAME      Domain name
     OZ_DOMAIN_PATH      Path to the domain directory (not docroot)
 
+post-domain-enable:
+    OZ_USER             Local user account name
+    OZ_DOMAIN_NAME      Domain name
+    OZ_DOMAIN_PATH      Path to the domain directory (not docroot)
+
+post-domain-disable:
+    OZ_USER             Local user account name
+    OZ_DOMAIN_NAME      Domain name
+    OZ_DOMAIN_PATH      Path to the domain directory (not docroot)
+
 post-email-add:
     OZ_EMAIL            Email address that was added
 

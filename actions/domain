@@ -47,19 +47,21 @@ optDbUser=
 optRemoveMysql=true
 
 case $2 in
-	--add|--delete)
+	--add|--delete|--enable|--disable)
 		action=${2:2}
 		;;
 	-h)
 		echo "OpenZula server utilities"
 		echo "Usage:"
 		echo -e "\t$scriptName domain --add -d domain -u user [-p password] [-m dbname] [-j dbuser] [-hn]"
-		echo -e "\t$scriptName domain --delete -d domain [-mh]\n"
+		echo -e "\t$scriptName domain --delete -d domain [-mh]"
+		echo -e "\t$scriptName domain --enable -d domainn"
+		echo -e "\t$scriptName domain --disable -d domain\n"
 		echo "Report bugs to <alex@openzula.org>"
 		exit 0
 		;;
 	*)
-		echo "Invalid action '$2'. Use '--add' or '--delete'" >&2
+		echo "Invalid action '$2'. Use '--add', '--delete', '--enable' or '--disable'" >&2
 		exit 1
 		;;
 esac
@@ -311,6 +313,41 @@ mysql_database = $dbName" > "$credentialsFile"
 		echo -e "\tDomain: $optDomain"
 		echo -e "\tPath removed: $domainPath"
 		echo -e "\tRemoved MySQL database? $dbRemoved"
+		echo -e "\nPlease restart your webserver (e.g. 'apache2ctl graceful')."
+		;;
+
+	enable|disable)
+		##
+		## Handle the 'enable' and 'disable' action
+		##
+		if [[ -z $optDomain ]]; then
+			echo "Invalid arguments, expects at least '-d'. See '-h' for help text." >&2
+			exit 1
+		fi
+
+		credentialsFile=$cfgVarStateDir/domains/$optDomain
+		if [[ ! -f $credentialsFile ]]; then
+			echo "Unable to find '$credentialsFile'" >&2
+			exit 2
+		fi
+		domainPath=$(awk '/^path =/{print $3}' "$credentialsFile")
+		user=$(awk '/^user =/{print $3}' "$credentialsFile")
+
+		## Run any additional files needed
+		export OZ_USER=$user OZ_DOMAIN_NAME=$optDomain OZ_DOMAIN_PATH=$domainPath
+		for postFile in "$configPath"/post-domain-"$action".d/*; do
+			if [[ -x $postFile ]]; then
+				(cd "$configPath/post-domain-$action.d" && ./$(basename "$postFile"))
+			fi
+		done
+
+		## All done!
+		if [[ $action = enable ]]; then
+			echo -e "Enabled domain for web hosting:\n"
+		else
+			echo -e "Disabled domain for web hosting:\n"
+		fi
+		echo -e "\tDomain: $optDomain"
 		echo -e "\nPlease restart your webserver (e.g. 'apache2ctl graceful')."
 		;;
 esac

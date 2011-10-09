@@ -1,0 +1,25 @@
+#!/bin/bash
+
+##
+## post-domain-enable
+## If you use Git to keep track of /etc (highly advised!) then this will automatically
+## commit the correct changes so you can easily see what has happened when a
+## domain was enabled and be able to do all the lovely Git things with it.
+##
+
+if ! type git &> /dev/null; then
+	echo "post-domain-enable/git: 'git' was not found or does not exist" >&2
+	exit 2
+elif [[ ! -d /etc/.git ]]; then
+	echo "post-domain-enable/git: /etc does not appear to be a Git repository" >&2
+	exit 2
+fi
+
+gitAuthorName=${SUDO_USER:-root}
+export GIT_DIR=/etc/.git GIT_WORK_TREE=/etc/
+
+git add "/etc/apache2/sites-enabled/$OZ_DOMAIN_NAME" &> /dev/null
+git rm "/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf.disabled" &> /dev/null
+git add "/etc/opt/php53/fpm.d/$OZ_DOMAIN_NAME.conf" &> /dev/null
+
+git commit --author="$gitAuthorName <$gitAuthorName@$(hostname -f)>" -m "ozsrvutils/domain/enable: $OZ_DOMAIN_NAME" > /dev/null
