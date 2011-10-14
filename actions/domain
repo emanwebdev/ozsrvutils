@@ -183,7 +183,7 @@ case $action in
 					--home "$usersHomeDir" \
 					--shell "$cfgUsersShell" \
 					--disabled-password \
-					--gecos "Created by ozsrvutils" \
+					--gecos "" \
 					"$optUser" > /dev/null
 			fi
 
