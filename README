@@ -6,14 +6,14 @@ Introduction
 ========================
 
 A collection of Bash scripts to control the management of clients
-domains and emails on OpenZula servers.
+domains and backups on OpenZula servers.
 
 These scripts offer the ability to add, edit and delete their specified
 task and restart/reload any service/deamon required for the effects to
 take place.
 
-Credentials for things such as domains, emails etc are stored in flat
-files (with passwords in plaintext) under the directory controlled by
+Credentials for things such as domains etc are stored in flat files
+(with passwords in plaintext) under the directory controlled by
 "cfgVarStateDir" (default is /var/lib/ozsrvutils).
 
 
@@ -33,7 +33,7 @@ To view the help simply use the "-h" flag, i.e:
     ozmanage -h
 
 This will display all of the available "actions" that can be used
-("domain", "email" etc). These are designed to manage their specified
+("domain", "backup" etc). These are designed to manage their specified
 task and most commands will provided the ability to add and delete.
 
 Each action has its own help which again ca be viewed using the "-h"
@@ -87,14 +87,5 @@ post-domain-disable:
     OZ_USER             Local user account name
     OZ_DOMAIN_NAME      Domain name
     OZ_DOMAIN_PATH      Path to the domain directory (not docroot)
-
-post-email-add:
-    OZ_EMAIL            Email address that was added
-
-post-email-delete:
-    OZ_EMAIL            Email address that was deleted
-
-post-email-chpasswd:
-    OZ_EMAIL            Email address the password was changed for
 
 END OF README

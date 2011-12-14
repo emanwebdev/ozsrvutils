@@ -2,7 +2,7 @@
 
 ###
 # OpenZula server utilities
-# --- Gets credentials/details of domains and email addresses
+# --- Gets credentials/details of domains
 #
 # Copyright (c) 2011 Alex Cartwright <alex@openzula.org>
 #
@@ -38,20 +38,15 @@ case $2 in
 		action=domain
 		getoptsStr=":d:h"
 		;;
-	--email)
-		action=email
-		getoptsStr=":a:h"
-		;;
 	-h)
 		echo "OpenZula server utilities"
 		echo "Usage:"
-		echo -e "\t$scriptName details --domain -d domain"
-		echo -e "\t$scriptName deatils --email -a foo@example.com\n"
+		echo -e "\t$scriptName details --domain -d domain\n"
 		echo "Report bugs to <alex@openzula.org>"
 		exit 0
 		;;
 	*)
-		echo "Invalid action '$2'. Use '--domain' or '--email'" >&2
+		echo "Invalid action '$2'. Use '--domain'" >&2
 		exit 1
 		;;
 esac
@@ -60,9 +55,6 @@ shift 2
 while getopts $getoptsStr OPTION
 do
 	case $OPTION in
-		a)
-			optEmail=$OPTARG
-			;;
 		d)
 			optDomain=${OPTARG#www.*}
 			;;
@@ -73,10 +65,6 @@ do
 				echo -e "\t$scriptName details --domain -d domain\n"
 				echo "Options:"
 				echo -e "\t-d\tDomain name of the website to get details for."
-			elif [[ $action = email ]]; then
-				echo -e "\t$scriptName details --email -a foo@example.com\n"
-				echo "Options:"
-				echo -e "\t-a\tEmail address to get details for."
 			fi
 			echo -e "\t-h\tDisplays this help text.\n"
 			echo "Report bugs to <alex@openzula.org>"
@@ -89,11 +77,9 @@ do
 	esac
 done
 
-if [[ -z $optDomain && -z $optEmail ]]; then
+if [[ -z $optDomain ]]; then
 	if [[ $action = domain ]]; then
 		echo "Invalid arguments; expecting at least '-d'. See -'h' for help text." >&2
-	else
-		echo "Invalid arguments; expecting at least '-a'. See -'h' for help text." >&2
 	fi
 	exit 1
 fi
@@ -101,8 +87,6 @@ fi
 ## Output the correct credentials file if it exists
 if [[ $action = domain ]]; then
 	credentialsFile=$cfgVarStateDir/domains/$optDomain
-else
-	credentialsFile=$cfgVarStateDir/emails/$optEmail
 fi
 
 if [[ -f $credentialsFile ]]; then

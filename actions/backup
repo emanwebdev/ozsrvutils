@@ -2,7 +2,7 @@
 
 ###
 # OpenZula server utilities
-# --- Backups domains, emails and some system files using "duplicity"
+# --- Backups domains and other system files using "duplicity"
 #
 # Copyright (c) 2011 Alex Cartwright <alex@openzula.org>
 #
@@ -43,7 +43,6 @@ case $2 in
 		backupCron=true
 		backupDetails=true
 		backupDomains=true
-		backupEmails=true
 		backupMysql=true
 		backupPackageList=true
 		;;
@@ -56,9 +55,6 @@ case $2 in
 	--domains)
 		backupDomains=true
 		;;
-	--emails)
-		backupEmails=true
-		;;
 	--mysql)
 		backupMysql=true
 		;;
@@ -68,12 +64,12 @@ case $2 in
 	-h)
 		echo "OpenZula server utilities"
 		echo "Usage:"
-		echo -e "\t$scriptName backup [--all|--cron --details --domains --emails --mysql --package-list]\n"
+		echo -e "\t$scriptName backup [--all|--cron --details --domains --mysql --package-list]\n"
 		echo "Report bugs to <alex@openzula.org>"
 		exit 0
 		;;
 	*)
-		echo "Invalid action '$2'. Use '--all', '--cron', '--details', '--domains', '--emails', '--mysql' or '--package-list'" >&2
+		echo "Invalid action '$2'. Use '--all', '--cron', '--details', '--domains', '--mysql' or '--package-list'" >&2
 		exit 1
 		;;
 esac
@@ -111,7 +107,7 @@ duplicityArgs+=("${cfgBackupDuplicityArgs[@]}")
 
 # Function to backup a source path ($1) using the provided realm ($2). Realms
 # help separate the different things that get backed up, such as domains,
-# emails etc which suffix the "cfgBackupDest" var, e.g. $cfgBackupDest/<realm>/
+# crons etc which suffix the "cfgBackupDest" var, e.g. $cfgBackupDest/<realm>/
 #
 # An optional third argument can be passed which specifies the destination
 # subpath ($3), allowing you to organize the destination paths better. If empty
@@ -170,7 +166,7 @@ if [[ $backupCron = true ]]; then
 	duplicityBackupPath /var/spool/cron cron || exitCode=2
 fi
 
-# details of domains and emails
+# details of domains
 if [[ $backupDetails = true ]]; then
 	duplicityBackupPath "$cfgVarStateDir" details || exitCode=2
 fi
@@ -187,11 +183,6 @@ if [[ $backupDomains = true ]]; then
 			exitCode=2
 		fi
 	done
-fi
-
-# Virtual email addresses
-if [[ $backupEmails = true ]]; then
-	duplicityBackupPath /var/mail/virtual emails || exitCode=2
 fi
 
 # Domain MySQL databases and the special "mysql" database

@@ -34,19 +34,18 @@
 ###
 
 case $2 in
-	--domains|--emails)
+	--domains)
 		ls -1 "$cfgVarStateDir/${2:2}/" 2> /dev/null | sort -n
 		;;
 	-h)
 		echo "OpenZula server utilities"
 		echo "Usage:"
-		echo -e "\t$scriptName list --domains"
-		echo -e "\t$scriptName list --emails\n"
+		echo -e "\t$scriptName list --domains\n"
 		echo "Report bugs to <alex@openzula.org>"
 		exit 0
 		;;
 	*)
-		echo "Invalid action '$2'. Use '--domains' or '--emails'" >&2
+		echo "Invalid action '$2'. Use '--domains'" >&2
 		exit 1
 		;;
 esac
