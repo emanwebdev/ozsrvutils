@@ -199,6 +199,7 @@ if [[ $backupMysql = true ]]; then
 		--password="$cfgMysqlPass" \
 		--lock-tables \
 		--skip-extended-insert \
+		--events \
 		mysql | gzip > "$tmpFile"
 
 	duplicityBackupPath "$tmpFile" mysql mysql
